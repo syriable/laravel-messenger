@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Syriable\Messenger\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class MessengerCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-messenger';
 
     public $description = 'My command';
 
