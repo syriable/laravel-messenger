@@ -2,9 +2,9 @@
 
 All notable changes to `laravel-messenger` will be documented in this file.
 
-## Unreleased
+## 0.9.0 - 2026-05-29
 
-Initial implementation of the headless one-to-one messaging domain platform.
+First public, feature-complete release of the headless one-to-one messaging domain platform. Released under `0.x` to allow the schema and public API to be refined based on real-world usage before committing to a stable `1.0.0`.
 
 ### Added
 
