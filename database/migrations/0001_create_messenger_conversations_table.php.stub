@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create(config('messenger.tables.conversations', 'messenger_conversations'), function (Blueprint $table) {
+            $table->ulid('id')->primary();
+
+            // Deterministic signature of the two participants. Guarantees that
+            // only one conversation can ever exist between any two participants.
+            $table->string('key')->unique();
+
+            // Denormalised pointers to the latest message, used to order the
+            // inbox without joining or aggregating the messages table.
+            $table->ulid('last_message_id')->nullable();
+            $table->timestamp('last_message_at')->nullable()->index();
+
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(config('messenger.tables.conversations', 'messenger_conversations'));
+    }
+};

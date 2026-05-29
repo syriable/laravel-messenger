@@ -7,4 +7,12 @@ parameters:
         - src
         - config
         - database
+        # Test support models (not the Pest test files) are analysed so that the
+        # public Messageable trait is exercised by a concrete consumer.
+        - tests/Models
+        - tests/Database
+    # The package ships its own config directory; tell Larastan so that env()
+    # calls there are not flagged as "outside the config directory".
+    configDirectories:
+        - config
     tmpDir: build/phpstan
