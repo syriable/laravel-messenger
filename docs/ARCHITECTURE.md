@@ -89,7 +89,7 @@ The default `messenger.pipeline` provides the package's core guarantees:
 | `EnsureConversationIsNotBlocked` | No send while either side has blocked/spammed (mutual). |
 | `EnsureMessageHasContent` | Rejects empty messages (no body and no attachments). |
 | `EnsureAttachmentsAreValid` | Enforces attachment count, size and type limits. |
-| `EnsureReplyIsValid` | A reply must reference an existing message in the same conversation. |
+| `EnsureReplyIsValid` | A reply must reference an existing message in the same conversation that is still visible to the sender (created after the sender's `cleared_at`). |
 
 The pipeline is config-driven so hosts can insert their own moderation/filtering pipes. The trade-off: **removing a default pipe removes the guarantee it provides.** If you customise `messenger.pipeline`, keep the pipes whose guarantees you still want — e.g. dropping `EnsureMessageHasContent` will allow empty messages to persist. Add to the list; only remove a default pipe when you deliberately want to drop its check.
 
@@ -104,4 +104,12 @@ Migrations link conversations, messages, participants and attachments through **
 ### Attachment validation is metadata-based
 
 `EnsureAttachmentsAreValid` checks the client-reported extension and MIME type against the configured allow-lists, plus per-file size and per-message count. It does **not** inspect file contents, sniff true types, or scan for malware/archive abuse. This baseline is suitable for trusted or moderated flows. For untrusted input, add a custom `SendPipe` that performs deep content inspection or virus scanning, or enforce it in host-application policies.
+
+### Unread totals exclude archived but include blocked/spam
+
+Unread totals (`Messenger::unreadCount()` / `unreadConversations()`) exclude **archived** conversations by default, mirroring the default inbox (pass `includeArchived: true` to count them). **Blocked and spam** conversations are *not* excluded: per the v1 spec they remain visible in the inbox (only sending is prevented), so their unread messages still contribute to the totals — keeping the badge consistent with what the user sees in their inbox. If you hide blocked/spam threads in your UI, filter their unread out there too.
+
+### First-message race recovery is bounded
+
+A conversation is created lazily on the first message, guarded by a unique `key`. When two first messages race, the loser catches the unique-constraint violation and retries (bounded: `SendMessageAction::$maxCreateAttempts`, with a short incremental backoff) to attach to the winner's conversation. This resolves normal database visibility latency. Under sustained, pathological contention where the winning transaction is still not visible after all attempts, the violation is rethrown — callers performing first contact at extreme concurrency should be prepared to retry. Raise `$maxCreateAttempts` (subclass the action) if your workload needs more headroom.
 

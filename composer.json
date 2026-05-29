@@ -35,8 +35,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Syriable\\Messenger\\": "src/",
-            "Syriable\\Messenger\\Database\\Factories\\": "database/factories/"
+            "Syriable\\Messenger\\": "src/"
         }
     },
     "autoload-dev": {

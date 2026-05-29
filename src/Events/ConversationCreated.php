@@ -2,11 +2,12 @@
 
 namespace Syriable\Messenger\Events;
 
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Syriable\Messenger\Models\Conversation;
 
-class ConversationCreated
+class ConversationCreated implements ShouldDispatchAfterCommit
 {
     use Dispatchable, SerializesModels;
 
