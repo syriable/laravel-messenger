@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="art/header.png" alt="Laravel Messenger" width="100%">
+</p>
+
 # Laravel Messenger
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/syriable/laravel-messenger.svg?style=flat-square)](https://packagist.org/packages/syriable/laravel-messenger)
