@@ -2,24 +2,37 @@
 
 namespace Syriable\Messenger;
 
+use Illuminate\Support\Facades\Event;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Syriable\Messenger\Commands\MessengerCommand;
+use Syriable\Messenger\Events\MessageSent;
+use Syriable\Messenger\Listeners\BroadcastMessageSent;
 
 class MessengerServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
         /*
-         * This class is a Package Service Provider
+         * A headless, backend-only messaging domain platform.
          *
-         * More info: https://github.com/spatie/laravel-package-tools
+         * https://github.com/spatie/laravel-package-tools
          */
         $package
             ->name('laravel-messenger')
             ->hasConfigFile()
-            ->hasViews()
-            ->hasMigration('create_laravel_messenger_table')
-            ->hasCommand(MessengerCommand::class);
+            ->discoversMigrations()
+            ->runsMigrations();
+    }
+
+    public function packageRegistered(): void
+    {
+        $this->app->singleton(Messenger::class);
+    }
+
+    public function packageBooted(): void
+    {
+        if (config('messenger.broadcasting.enabled', false)) {
+            Event::listen(MessageSent::class, BroadcastMessageSent::class);
+        }
     }
 }
