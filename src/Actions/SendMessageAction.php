@@ -14,6 +14,7 @@ use Syriable\Messenger\Events\ConversationCreated;
 use Syriable\Messenger\Events\MessageSent;
 use Syriable\Messenger\Exceptions\ConversationBlockedException;
 use Syriable\Messenger\Exceptions\InvalidParticipantException;
+use Syriable\Messenger\Exceptions\InvalidReplyException;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
 use Syriable\Messenger\Models\Participant;
@@ -112,6 +113,10 @@ class SendMessageAction
                     // time-of-use gap after the pipeline ran.
                     $this->guardNotBlocked($conversation);
 
+                    // Re-validate the reply target against the sender's current
+                    // cleared_at, in case they cleared history after the pipeline.
+                    $this->guardReplyIsVisible($conversation, $pending);
+
                     $sentMessage = $this->persistMessage($conversation, $pending, $stored);
 
                     $this->updateProjections($conversation, $sentMessage, $pending);
@@ -119,14 +124,14 @@ class SendMessageAction
                     return [$conversation, $sentMessage, $created];
                 });
 
-                // Dispatch only after every enclosing transaction commits, so
-                // listeners and broadcasts always see persisted data — even when
-                // the host wraps the send in its own outer transaction.
+                // The events implement ShouldDispatchAfterCommit, so listeners
+                // and broadcasts run only after every enclosing transaction
+                // commits — even when the host wraps the send in its own.
                 if ($created) {
-                    DB::afterCommit(fn () => ConversationCreated::dispatch($conversation));
+                    ConversationCreated::dispatch($conversation);
                 }
 
-                DB::afterCommit(fn () => MessageSent::dispatch($sentMessage));
+                MessageSent::dispatch($sentMessage);
 
                 return $sentMessage;
             } catch (UniqueConstraintViolationException $e) {
@@ -154,6 +159,31 @@ class SendMessageAction
 
         if ($blocked) {
             throw ConversationBlockedException::make();
+        }
+    }
+
+    protected function guardReplyIsVisible(Conversation $conversation, PendingMessage $pending): void
+    {
+        $replyToId = $pending->message->replyToId;
+
+        if ($replyToId === null) {
+            return;
+        }
+
+        $query = Models::message()::query()
+            ->whereKey($replyToId)
+            ->where('conversation_id', $conversation->getKey());
+
+        $clearedAt = $conversation->participants()
+            ->forParticipant($pending->sender)
+            ->value('cleared_at');
+
+        if ($clearedAt !== null) {
+            $query->where('created_at', '>', $clearedAt);
+        }
+
+        if (! $query->exists()) {
+            throw InvalidReplyException::notInConversation();
         }
     }
 

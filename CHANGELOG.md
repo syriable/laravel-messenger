@@ -6,6 +6,9 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 ### Fixed
 
+- Dispatch **all** domain events (participant-state and reporting events, not just send events) after the enclosing transaction commits, via `ShouldDispatchAfterCommit` on the event classes (#35).
+- Re-validate reply visibility inside the write transaction so a clear between the pipeline and persist still rejects the reply (#37).
+- Remove the dead `Syriable\Messenger\Database\Factories\` → `database/factories/` autoload mapping (no such directory) (#38).
 - Increment the recipient unread counter atomically so concurrent sends cannot lose an update (#4).
 - Recover from a lost first-message create race by attaching to the winning conversation instead of failing with a unique-constraint error (#3).
 - Remove stored attachment files when the send transaction rolls back, so a failed send leaves no orphaned files (#7).
@@ -32,6 +35,7 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 - Document the intentional v1 design constraints and trade-offs: unrestricted message reporting (#6), required send-pipeline pipes (#9), absence of database foreign keys (#12), the lightweight realtime broadcast payload (#13) and metadata-based attachment validation (#14).
 - Add a Security notes section covering attachment URL exposure on public disks (#27), mass-assignment expectations for package models (#32) and blocked/spam inbox visibility (#18); align the architecture doc with the removed cache config (#24).
+- Document that unread totals exclude archived but intentionally still count blocked/spam threads (#36), the bounded first-message race recovery and its residual failure mode (#39), and the clear-aware reply guarantee in the pipe table (#41).
 
 ## 0.9.0 - 2026-05-29
 
