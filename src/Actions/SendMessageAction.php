@@ -2,11 +2,14 @@
 
 namespace Syriable\Messenger\Actions;
 
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Data\NewMessage;
 use Syriable\Messenger\Data\PendingMessage;
+use Syriable\Messenger\Data\StoredAttachment;
 use Syriable\Messenger\Events\ConversationCreated;
 use Syriable\Messenger\Events\MessageSent;
 use Syriable\Messenger\Models\Conversation;
@@ -15,15 +18,25 @@ use Syriable\Messenger\Queries\FindConversationBetweenQuery;
 use Syriable\Messenger\Services\AttachmentService;
 use Syriable\Messenger\Support\ConversationKey;
 use Syriable\Messenger\Support\Models;
+use Throwable;
 
 /**
  * Sends a message from one participant to another.
  *
  * The conversation is created lazily on the first message (conversations are
  * never empty). The message passes through the configurable send pipeline
- * before being persisted alongside its attachments. Denormalised fields
- * (conversation activity, unread counters) are updated in the same
- * transaction, and domain events are dispatched.
+ * before being persisted alongside its attachments.
+ *
+ * Transaction & concurrency guarantees:
+ *  - Attachment files are written before the transaction and removed again if
+ *    it rolls back, so a failed send never leaves orphaned files on disk.
+ *  - A lost lazy-creation race (two simultaneous first messages) is recovered
+ *    by attaching to the conversation the winning request created, instead of
+ *    surfacing a unique-constraint error.
+ *  - The recipient unread counter is incremented atomically in SQL so parallel
+ *    sends cannot lose an update.
+ *  - Domain events are dispatched only after the transaction has committed, so
+ *    listeners and broadcasts always observe persisted data.
  */
 class SendMessageAction
 {
@@ -54,26 +67,62 @@ class SendMessageAction
             ->via('handle')
             ->thenReturn();
 
-        return DB::transaction(function () use ($pending) {
-            $created = $pending->conversation === null;
+        // Store files up front so the database transaction stays short. If the
+        // transaction ultimately fails, the files are cleaned up below.
+        $stored = $this->storeAttachments($pending->message->attachments);
 
-            $conversation = $pending->conversation ?? $this->createConversation($pending);
+        try {
+            return $this->persist($pending, $stored);
+        } catch (Throwable $e) {
+            $this->discardStoredAttachments($stored);
 
-            if ($created) {
-                ConversationCreated::dispatch($conversation);
-            }
-
-            $sentMessage = $this->persistMessage($conversation, $pending);
-
-            $this->updateProjections($conversation, $sentMessage, $pending);
-
-            MessageSent::dispatch($sentMessage);
-
-            return $sentMessage;
-        });
+            throw $e;
+        }
     }
 
-    private function createConversation(PendingMessage $pending): Conversation
+    /**
+     * @param  array<int, StoredAttachment>  $stored
+     */
+    protected function persist(PendingMessage $pending, array $stored): Message
+    {
+        $attempts = 0;
+
+        while (true) {
+            try {
+                [$conversation, $sentMessage, $created] = DB::transaction(function () use ($pending, $stored) {
+                    $created = $pending->conversation === null;
+
+                    $conversation = $pending->conversation ?? $this->createConversation($pending);
+
+                    $sentMessage = $this->persistMessage($conversation, $pending, $stored);
+
+                    $this->updateProjections($conversation, $sentMessage, $pending);
+
+                    return [$conversation, $sentMessage, $created];
+                });
+
+                // Dispatch only after a successful commit so listeners and
+                // broadcasts always see persisted data.
+                if ($created) {
+                    ConversationCreated::dispatch($conversation);
+                }
+
+                MessageSent::dispatch($sentMessage);
+
+                return $sentMessage;
+            } catch (UniqueConstraintViolationException $e) {
+                // Another first message created the conversation first. Re-resolve
+                // it and retry once, attaching this message to the same thread.
+                if (++$attempts > 1) {
+                    throw $e;
+                }
+
+                $pending->conversation = $this->findConversation->execute($pending->sender, $pending->recipient);
+            }
+        }
+    }
+
+    protected function createConversation(PendingMessage $pending): Conversation
     {
         /** @var Conversation $conversation */
         $conversation = Models::conversation()::query()->create([
@@ -91,7 +140,7 @@ class SendMessageAction
     /**
      * @return array<string, mixed>
      */
-    private function participantAttributes(MessengerParticipant $participant): array
+    protected function participantAttributes(MessengerParticipant $participant): array
     {
         return [
             'participant_type' => $participant->getMorphClass(),
@@ -99,7 +148,10 @@ class SendMessageAction
         ];
     }
 
-    private function persistMessage(Conversation $conversation, PendingMessage $pending): Message
+    /**
+     * @param  array<int, StoredAttachment>  $stored
+     */
+    protected function persistMessage(Conversation $conversation, PendingMessage $pending, array $stored): Message
     {
         /** @var Message $message */
         $message = $conversation->messages()->create([
@@ -109,14 +161,14 @@ class SendMessageAction
             'reply_to_id' => $pending->message->replyToId,
         ]);
 
-        foreach ($pending->message->attachments as $file) {
-            $message->attachments()->create($this->attachments->store($file)->toAttributes());
+        foreach ($stored as $attachment) {
+            $message->attachments()->create($attachment->toAttributes());
         }
 
         return $message->load('attachments');
     }
 
-    private function updateProjections(Conversation $conversation, Message $message, PendingMessage $pending): void
+    protected function updateProjections(Conversation $conversation, Message $message, PendingMessage $pending): void
     {
         $conversation->forceFill([
             'last_message_id' => $message->getKey(),
@@ -134,10 +186,27 @@ class SendMessageAction
             'archived_at' => null,
         ])->save();
 
-        // The recipient gains one unread message and the conversation resurfaces.
-        $recipient?->forceFill([
-            'unread_count' => $recipient->unread_count + 1,
-            'archived_at' => null,
-        ])->save();
+        // Increment atomically (column = column + 1) so concurrent sends cannot
+        // lose an update, and resurface the conversation for the recipient.
+        $recipient?->increment('unread_count', 1, ['archived_at' => null]);
+    }
+
+    /**
+     * @param  array<int, mixed>  $files
+     * @return array<int, StoredAttachment>
+     */
+    protected function storeAttachments(array $files): array
+    {
+        return array_map(fn ($file) => $this->attachments->store($file), $files);
+    }
+
+    /**
+     * @param  array<int, StoredAttachment>  $stored
+     */
+    protected function discardStoredAttachments(array $stored): void
+    {
+        foreach ($stored as $attachment) {
+            Storage::disk($attachment->disk)->delete($attachment->path);
+        }
     }
 }

@@ -129,12 +129,12 @@ Every lifecycle operation dispatches an immutable, past-tense domain event you c
 
 ## Realtime broadcasting
 
-Broadcasting is optional and **event-driven** — it is never coupled into the actions. Enable it:
+Broadcasting is optional and **event-driven** — it is never coupled into the actions. It is **disabled by default**; turn it on by setting `MESSENGER_BROADCASTING_ENABLED=true`. The published configuration defaults:
 
 ```php
 // config/messenger.php
 'broadcasting' => [
-    'enabled' => env('MESSENGER_BROADCASTING_ENABLED', true),
+    'enabled' => env('MESSENGER_BROADCASTING_ENABLED', false),
     'channel_prefix' => 'messenger',
     'private' => true,
 ],
