@@ -9,6 +9,7 @@ use Syriable\Messenger\Pipelines\Send\EnsureAttachmentsAreValid;
 use Syriable\Messenger\Pipelines\Send\EnsureConversationIsNotBlocked;
 use Syriable\Messenger\Pipelines\Send\EnsureMessageHasContent;
 use Syriable\Messenger\Pipelines\Send\EnsureParticipantsAreValid;
+use Syriable\Messenger\Pipelines\Send\EnsureReplyIsValid;
 
 // Configuration for syriable/laravel-messenger.
 return [
@@ -93,6 +94,7 @@ return [
         EnsureConversationIsNotBlocked::class,
         EnsureMessageHasContent::class,
         EnsureAttachmentsAreValid::class,
+        EnsureReplyIsValid::class,
     ],
 
     /*
@@ -111,21 +113,5 @@ return [
         'channel_prefix' => 'messenger',
         // Use private channels (true) or presence/public channels semantics.
         'private' => true,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cache
-    |--------------------------------------------------------------------------
-    |
-    | Caching is purely an optimisation for read projections. It is never the
-    | source of truth and the package works fully with caching disabled.
-    |
-    */
-    'cache' => [
-        'enabled' => env('MESSENGER_CACHE_ENABLED', false),
-        'store' => env('MESSENGER_CACHE_STORE', null),
-        'ttl' => 300,
-        'prefix' => 'messenger',
     ],
 ];
