@@ -158,6 +158,7 @@ Messages pass through a composable, configurable pipeline before they are stored
     \Syriable\Messenger\Pipelines\Send\EnsureConversationIsNotBlocked::class,
     \Syriable\Messenger\Pipelines\Send\EnsureMessageHasContent::class,
     \Syriable\Messenger\Pipelines\Send\EnsureAttachmentsAreValid::class,
+    \Syriable\Messenger\Pipelines\Send\EnsureReplyIsValid::class,
     \App\Messaging\ProfanityFilter::class, // your own SendPipe
 ],
 ```

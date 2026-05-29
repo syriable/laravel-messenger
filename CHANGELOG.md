@@ -2,27 +2,24 @@
 
 All notable changes to `laravel-messenger` will be documented in this file.
 
-## v0.9.0 — First public release - 2026-05-29
+## Unreleased
 
-First public, feature-complete release of **Laravel Messenger** — a headless, backend-only one-to-one messaging domain platform for Laravel (Messenger / Instagram DMs / WhatsApp-style). Released under `0.x` so the schema and public API can be refined from real-world feedback before a stable `1.0.0`.
+### Fixed
 
-### Highlights
+- Increment the recipient unread counter atomically so concurrent sends cannot lose an update (#4).
+- Recover from a lost first-message create race by attaching to the winning conversation instead of failing with a unique-constraint error (#3).
+- Remove stored attachment files when the send transaction rolls back, so a failed send leaves no orphaned files (#7).
+- Dispatch `MessageSent` and `ConversationCreated` only after the transaction commits, so listeners and broadcasts observe persisted data (#8).
+- Validate reply references: a reply must point to an existing message in the same conversation, otherwise the send is rejected (#5).
+- Correct the README broadcasting default to match the published config (`false`) and remove a duplicate heading (#10).
 
-- One-to-one conversations with a deterministic uniqueness key and lazy creation on the first message
-- Morphable participants (`MessengerParticipant` + `Messageable` trait)
-- Composable, configurable send pipeline (participant / block-spam / content / attachment validation)
-- Self-contained attachment storage with configurable size/mime/count limits
-- Per-participant state: archive, star, block (mutual), spam (mutual), clear (visibility reset), read/unread
-- Lightweight replies and message reporting
-- Read-only, N+1-free queries (inbox, messages, unread totals) with denormalized counters
-- Immutable, past-tense domain events + optional event-driven broadcasting
-- ULID keys, indexed lookups, performance-first design
+### Changed
 
-**Requires** PHP 8.3+ · Laravel 12–13. See the [README](https://github.com/syriable/laravel-messenger#readme) and [`docs/ARCHITECTURE.md`](https://github.com/syriable/laravel-messenger/blob/main/docs/ARCHITECTURE.md).
+- Remove the unused `cache` configuration block (caching was never wired into the read paths) (#11).
 
 ## 0.9.0 - 2026-05-29
 
-First public, feature-complete release of the headless one-to-one messaging domain platform. Released under `0.x` to allow the schema and public API to be refined based on real-world usage before committing to a stable `1.0.0`.
+First public, feature-complete release of **Laravel Messenger** — a headless, backend-only one-to-one messaging domain platform for Laravel (Messenger / Instagram DMs / WhatsApp-style). Released under `0.x` so the schema and public API can be refined from real-world feedback before a stable `1.0.0`.
 
 ### Added
 
@@ -37,3 +34,5 @@ First public, feature-complete release of the headless one-to-one messaging doma
 - Immutable, past-tense domain events for every lifecycle operation.
 - Optional, event-driven realtime broadcasting (`MessageSentBroadcast` + `BroadcastMessageSent` listener).
 - ULID primary keys, indexed lookups and denormalized projections for performance.
+
+**Requires** PHP 8.3+ · Laravel 12–13. See the [README](https://github.com/syriable/laravel-messenger#readme) and [`docs/ARCHITECTURE.md`](https://github.com/syriable/laravel-messenger/blob/main/docs/ARCHITECTURE.md).
