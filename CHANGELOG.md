@@ -17,6 +17,10 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 - Remove the unused `cache` configuration block (caching was never wired into the read paths) (#11).
 
+### Documentation
+
+- Document the intentional v1 design constraints and trade-offs: unrestricted message reporting (#6), required send-pipeline pipes (#9), absence of database foreign keys (#12), the lightweight realtime broadcast payload (#13) and metadata-based attachment validation (#14).
+
 ## 0.9.0 - 2026-05-29
 
 First public, feature-complete release of **Laravel Messenger** — a headless, backend-only one-to-one messaging domain platform for Laravel (Messenger / Instagram DMs / WhatsApp-style). Released under `0.x` so the schema and public API can be refined from real-world feedback before a stable `1.0.0`.
