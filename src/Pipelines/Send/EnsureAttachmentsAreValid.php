@@ -39,8 +39,16 @@ class EnsureAttachmentsAreValid implements SendPipe
 
             $name = $file->getClientOriginalName();
 
+            // Reject uploads whose size cannot be determined rather than letting
+            // a false/null size slip past the numeric comparison below.
+            $size = $file->getSize();
+
+            if (! is_int($size)) {
+                throw InvalidAttachmentException::indeterminateSize($name);
+            }
+
             // Size limit (config value is in kilobytes).
-            if ($maxSize > 0 && $file->getSize() > $maxSize * 1024) {
+            if ($maxSize > 0 && $size > $maxSize * 1024) {
                 throw InvalidAttachmentException::tooLarge($name, $maxSize);
             }
 

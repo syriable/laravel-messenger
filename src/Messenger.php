@@ -69,14 +69,14 @@ class Messenger
         return app(GetConversationMessagesQuery::class)->execute($conversation, $participant, $options);
     }
 
-    public function unreadCount(MessengerParticipant $participant): int
+    public function unreadCount(MessengerParticipant $participant, bool $includeArchived = false): int
     {
-        return app(GetUnreadCountQuery::class)->execute($participant);
+        return app(GetUnreadCountQuery::class)->execute($participant, $includeArchived);
     }
 
-    public function unreadConversations(MessengerParticipant $participant): int
+    public function unreadConversations(MessengerParticipant $participant, bool $includeArchived = false): int
     {
-        return app(GetUnreadCountQuery::class)->conversations($participant);
+        return app(GetUnreadCountQuery::class)->conversations($participant, $includeArchived);
     }
 
     public function archive(Conversation $conversation, MessengerParticipant $participant): Participant

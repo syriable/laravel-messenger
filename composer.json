@@ -41,8 +41,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Syriable\\Messenger\\Tests\\": "tests/",
-            "Workbench\\App\\": "workbench/app/"
+            "Syriable\\Messenger\\Tests\\": "tests/"
         }
     },
     "scripts": {

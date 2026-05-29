@@ -12,8 +12,11 @@ use Syriable\Messenger\Data\PendingMessage;
 use Syriable\Messenger\Data\StoredAttachment;
 use Syriable\Messenger\Events\ConversationCreated;
 use Syriable\Messenger\Events\MessageSent;
+use Syriable\Messenger\Exceptions\ConversationBlockedException;
+use Syriable\Messenger\Exceptions\InvalidParticipantException;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
+use Syriable\Messenger\Models\Participant;
 use Syriable\Messenger\Queries\FindConversationBetweenQuery;
 use Syriable\Messenger\Services\AttachmentService;
 use Syriable\Messenger\Support\ConversationKey;
@@ -31,12 +34,16 @@ use Throwable;
  *  - Attachment files are written before the transaction and removed again if
  *    it rolls back, so a failed send never leaves orphaned files on disk.
  *  - A lost lazy-creation race (two simultaneous first messages) is recovered
- *    by attaching to the conversation the winning request created, instead of
- *    surfacing a unique-constraint error.
+ *    by attaching to the conversation the winning request created, with bounded
+ *    retries to cover the window before the winner's transaction is visible.
+ *  - Block/spam state is re-checked inside the write transaction (with the
+ *    participant rows locked) so it cannot be bypassed in the time-of-check /
+ *    time-of-use gap after the pipeline ran.
  *  - The recipient unread counter is incremented atomically in SQL so parallel
  *    sends cannot lose an update.
- *  - Domain events are dispatched only after the transaction has committed, so
- *    listeners and broadcasts always observe persisted data.
+ *  - Domain events are dispatched only after all enclosing transactions have
+ *    committed, so listeners and broadcasts always observe persisted data even
+ *    when the host wraps the send in its own transaction.
  */
 class SendMessageAction
 {
@@ -81,6 +88,12 @@ class SendMessageAction
     }
 
     /**
+     * Maximum attempts to recover from a lost first-message creation race
+     * before giving up and rethrowing the unique-constraint violation.
+     */
+    protected int $maxCreateAttempts = 3;
+
+    /**
      * @param  array<int, StoredAttachment>  $stored
      */
     protected function persist(PendingMessage $pending, array $stored): Message
@@ -94,6 +107,11 @@ class SendMessageAction
 
                     $conversation = $pending->conversation ?? $this->createConversation($pending);
 
+                    // Re-check block/spam inside the transaction with the
+                    // participant rows locked, closing the time-of-check /
+                    // time-of-use gap after the pipeline ran.
+                    $this->guardNotBlocked($conversation);
+
                     $sentMessage = $this->persistMessage($conversation, $pending, $stored);
 
                     $this->updateProjections($conversation, $sentMessage, $pending);
@@ -101,24 +119,41 @@ class SendMessageAction
                     return [$conversation, $sentMessage, $created];
                 });
 
-                // Dispatch only after a successful commit so listeners and
-                // broadcasts always see persisted data.
+                // Dispatch only after every enclosing transaction commits, so
+                // listeners and broadcasts always see persisted data — even when
+                // the host wraps the send in its own outer transaction.
                 if ($created) {
-                    ConversationCreated::dispatch($conversation);
+                    DB::afterCommit(fn () => ConversationCreated::dispatch($conversation));
                 }
 
-                MessageSent::dispatch($sentMessage);
+                DB::afterCommit(fn () => MessageSent::dispatch($sentMessage));
 
                 return $sentMessage;
             } catch (UniqueConstraintViolationException $e) {
                 // Another first message created the conversation first. Re-resolve
-                // it and retry once, attaching this message to the same thread.
-                if (++$attempts > 1) {
+                // it and retry, attaching this message to the same thread. The
+                // winner's transaction may not be visible immediately, so retry
+                // a bounded number of times with a short backoff.
+                if (++$attempts >= $this->maxCreateAttempts) {
                     throw $e;
                 }
 
+                usleep(10000 * $attempts);
+
                 $pending->conversation = $this->findConversation->execute($pending->sender, $pending->recipient);
             }
+        }
+    }
+
+    protected function guardNotBlocked(Conversation $conversation): void
+    {
+        $blocked = $conversation->participants()
+            ->lockForUpdate()
+            ->get()
+            ->contains(fn (Participant $row) => $row->isBlocking() || $row->isSpamming());
+
+        if ($blocked) {
+            throw ConversationBlockedException::make();
         }
     }
 
@@ -178,9 +213,16 @@ class SendMessageAction
         $sender = $conversation->participantFor($pending->sender);
         $recipient = $conversation->participantFor($pending->recipient);
 
+        // Both participant rows must exist; a conversation missing one is
+        // corrupt, and silently skipping the update would leave unread counters
+        // wrong. Fail loudly so the transaction rolls back.
+        if ($sender === null || $recipient === null) {
+            throw InvalidParticipantException::notInConversation();
+        }
+
         // The sender implicitly reads the conversation by sending; sending also
         // surfaces an archived conversation back into the inbox.
-        $sender?->forceFill([
+        $sender->forceFill([
             'last_read_at' => $message->created_at,
             'unread_count' => 0,
             'archived_at' => null,
@@ -188,7 +230,7 @@ class SendMessageAction
 
         // Increment atomically (column = column + 1) so concurrent sends cannot
         // lose an update, and resurface the conversation for the recipient.
-        $recipient?->increment('unread_count', 1, ['archived_at' => null]);
+        $recipient->increment('unread_count', 1, ['archived_at' => null]);
     }
 
     /**

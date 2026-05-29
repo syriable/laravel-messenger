@@ -18,4 +18,14 @@ class InvalidAttachmentException extends MessengerException
     {
         return new self("Attachment [{$name}] has a file type that is not allowed.");
     }
+
+    public static function indeterminateSize(string $name): self
+    {
+        return new self("Attachment [{$name}] could not be accepted because its size could not be determined.");
+    }
+
+    public static function storageFailed(string $name): self
+    {
+        return new self("Attachment [{$name}] could not be stored.");
+    }
 }

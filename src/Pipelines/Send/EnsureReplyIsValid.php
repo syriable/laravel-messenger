@@ -9,9 +9,11 @@ use Syriable\Messenger\Exceptions\InvalidReplyException;
 use Syriable\Messenger\Support\Models;
 
 /**
- * When a message replies to another, ensures the referenced message exists and
- * belongs to the same conversation. A reply on a brand-new conversation (which
- * has no prior messages) is therefore always rejected.
+ * When a message replies to another, ensures the referenced message exists,
+ * belongs to the same conversation, and is still visible to the sender (i.e.
+ * was created after the sender's clear timestamp). A reply on a brand-new
+ * conversation (which has no prior messages) is therefore always rejected, as
+ * is a reply to a message the sender has cleared from their own history.
  */
 class EnsureReplyIsValid implements SendPipe
 {
@@ -25,12 +27,24 @@ class EnsureReplyIsValid implements SendPipe
 
         $conversation = $message->conversation;
 
-        $belongsToConversation = $conversation !== null && Models::message()::query()
-            ->whereKey($replyToId)
-            ->where('conversation_id', $conversation->getKey())
-            ->exists();
+        if ($conversation === null) {
+            throw InvalidReplyException::notInConversation();
+        }
 
-        if (! $belongsToConversation) {
+        $query = Models::message()::query()
+            ->whereKey($replyToId)
+            ->where('conversation_id', $conversation->getKey());
+
+        // The replied-to message must still be visible to the sender: a message
+        // created at or before the sender's clear timestamp has been removed
+        // from their view and cannot be replied to.
+        $clearedAt = $conversation->participantFor($message->sender)?->cleared_at;
+
+        if ($clearedAt !== null) {
+            $query->where('created_at', '>', $clearedAt);
+        }
+
+        if (! $query->exists()) {
             throw InvalidReplyException::notInConversation();
         }
 
