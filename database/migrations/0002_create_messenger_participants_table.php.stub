@@ -1,0 +1,47 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create(config('messenger.tables.participants', 'messenger_participants'), function (Blueprint $table) {
+            $table->ulid('id')->primary();
+
+            $table->ulid('conversation_id')->index();
+
+            // Morphable participant. String columns keep the package agnostic to
+            // the host model's key type (int, ULID, UUID, ...).
+            $table->string('participant_type');
+            $table->string('participant_id');
+
+            // Participant-specific conversation state. The conversation itself
+            // remains neutral and shared between both participants.
+            $table->timestamp('archived_at')->nullable();
+            $table->timestamp('starred_at')->nullable();
+            $table->timestamp('blocked_at')->nullable();
+            $table->timestamp('spammed_at')->nullable();
+            $table->timestamp('cleared_at')->nullable();
+            $table->timestamp('last_read_at')->nullable();
+
+            // Denormalised unread counter for fast unread retrieval.
+            $table->unsignedInteger('unread_count')->default(0);
+
+            $table->timestamps();
+
+            // Only one participant row per (conversation, participant).
+            $table->unique(['conversation_id', 'participant_type', 'participant_id'], 'messenger_participant_unique');
+
+            // Fast lookup of a participant's conversations.
+            $table->index(['participant_type', 'participant_id'], 'messenger_participant_lookup');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(config('messenger.tables.participants', 'messenger_participants'));
+    }
+};
