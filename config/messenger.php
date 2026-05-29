@@ -51,6 +51,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Messages
+    |--------------------------------------------------------------------------
+    |
+    | Constraints applied to outgoing message bodies by the send pipeline. Set
+    | max_body_length to null to disable the length check.
+    |
+    */
+    'messages' => [
+        'max_body_length' => 20000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reports
+    |--------------------------------------------------------------------------
+    |
+    | Length limits for the optional reason/note fields on a message report.
+    | Set a value to null to disable the corresponding check.
+    |
+    */
+    'reports' => [
+        'max_reason_length' => 255,
+        'max_note_length' => 2000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Attachments
     |--------------------------------------------------------------------------
     |

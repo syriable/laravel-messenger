@@ -5,6 +5,7 @@ namespace Syriable\Messenger\Services;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Syriable\Messenger\Data\StoredAttachment;
+use Syriable\Messenger\Exceptions\InvalidAttachmentException;
 
 /**
  * Owns the attachment storage lifecycle: naming, persistence and metadata
@@ -37,6 +38,12 @@ class AttachmentService
         }
 
         $path = $file->storeAs($this->directory(), $name, ['disk' => $disk]);
+
+        // storeAs() returns false when the write fails (e.g. disk permissions).
+        // Treat that as a hard failure so the send rolls back and cleans up.
+        if ($path === false) {
+            throw InvalidAttachmentException::storageFailed($file->getClientOriginalName());
+        }
 
         return new StoredAttachment(
             disk: $disk,

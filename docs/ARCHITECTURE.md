@@ -41,7 +41,7 @@ The send pipeline is an ordered, configurable list of pipes (`messenger.pipeline
 
 ### Events & Listeners
 
-Every lifecycle operation dispatches an immutable, past-tense event. Listeners are reserved for thin side-effects (broadcasting, cache invalidation). Broadcasting is **never** coupled into actions: `BroadcastMessageSent` listens for `MessageSent` and emits the `MessageSentBroadcast` only when `messenger.broadcasting.enabled` is true.
+Every lifecycle operation dispatches an immutable, past-tense event. Listeners are reserved for thin side-effects such as broadcasting. Broadcasting is **never** coupled into actions: `BroadcastMessageSent` listens for `MessageSent` and emits the `MessageSentBroadcast` only when `messenger.broadcasting.enabled` is true. Domain events are dispatched after the send transaction commits (via `DB::afterCommit`), so they fire only once the host's enclosing transaction — if any — has also committed.
 
 ## Key domain decisions
 

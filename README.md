@@ -98,9 +98,12 @@ $conversations = $alice->inbox(['include_archived' => true, 'starred' => true, '
 $conversation = Messenger::between($alice, $bob);
 $messages = Messenger::messages($conversation, $alice, ['limit' => 50]);
 
-// Unread totals (denormalized — no message scanning)
-$alice->unreadConversationsCount();          // sum of unread messages
-Messenger::unreadConversations($alice);       // number of conversations with unread
+// Unread totals (denormalized — no message scanning; archived excluded by default)
+$alice->unreadMessagesCount();               // total unread messages
+$alice->unreadConversationsCount();          // number of conversations with unread
+Messenger::unreadCount($alice);              // total unread messages
+Messenger::unreadConversations($alice);      // number of conversations with unread
+Messenger::unreadCount($alice, includeArchived: true); // include archived threads
 ```
 
 ### Conversation state (per participant)
@@ -189,6 +192,14 @@ class ProfanityFilter implements SendPipe
 The package is **not** responsible for business authorization (no policies, roles or ACL). Your application decides who may message whom. The package only enforces internal messaging constraints: blocked / spam conversations, participant membership and message validity.
 
 Consistent with this, **message reporting is unrestricted**: `Messenger::report()` accepts a report from any identity against any message and does not require the reporter to be a participant. Gate it in your application if you need participant-only reporting.
+
+## Security notes
+
+Because the package is headless and host-owned, a few responsibilities sit with your application:
+
+- **Attachment access.** `$attachment->url` returns `Storage::disk($disk)->url($path)` with no signing or authorization. If you store attachments on a **public** disk, those URLs are world-readable. Use a private disk and serve files through an authorized controller (or `temporaryUrl()` on a disk that supports it). The package never gates file access for you.
+- **Mass assignment.** Package models use `$guarded = []` and are intended to be written **only** through the package's actions (`Messenger::send()`, `report()`, etc.), never filled directly from request input. Do not do `Message::create($request->all())` or `$participant->update($request->all())` — that would let callers tamper with fields like `unread_count`, `blocked_at` or `sender_id`. Treat the models as internal domain objects.
+- **Blocked / spam conversations stay in the inbox.** Blocking or marking spam prevents *sending* (mutually) but, per the v1 spec, keeps history visible and stored — so these conversations still appear in `Messenger::inbox()`. Each returned `Conversation` exposes the participant's `blocked_at` / `spammed_at` state for your UI to filter or badge as you see fit.
 
 ## Architecture
 

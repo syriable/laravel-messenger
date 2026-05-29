@@ -56,8 +56,19 @@ trait Messageable
         return Messenger::inbox($this, $options);
     }
 
-    public function unreadConversationsCount(): int
+    /**
+     * Total number of unread messages across the participant's conversations.
+     */
+    public function unreadMessagesCount(): int
     {
         return Messenger::unreadCount($this);
+    }
+
+    /**
+     * Number of conversations that contain at least one unread message.
+     */
+    public function unreadConversationsCount(): int
+    {
+        return Messenger::unreadConversations($this);
     }
 }
