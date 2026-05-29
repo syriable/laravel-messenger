@@ -65,8 +65,43 @@ Performance is a first-class requirement:
 - **Denormalized projections**: `conversations.last_message_id` / `last_message_at` make inbox ordering a single indexed sort with no aggregation; `participants.unread_count` makes unread totals a counter read, not a message scan.
 - **No N+1**: the inbox joins the participant row and eager-loads `participants` + `lastMessage`; message reads eager-load `attachments` + `replyTo`.
 - **Unread never reorders the inbox** — ordering depends solely on latest activity.
-- **Caching is optional** and only ever a projection optimisation; the database remains the source of truth and the package works fully with caching disabled.
+- **Caching** is intentionally left to the host application; it is never the source of truth. The database is always authoritative, and any caching layer should sit in front of the read queries without changing their results.
 
 ## Authorization boundary
 
 The package enforces only internal messaging constraints — blocked/spammed conversations, participant membership and message validity. All business authorization (who may message whom, roles, permissions) belongs to the host application.
+
+## Design constraints & trade-offs (v1)
+
+These behaviours are deliberate for v1. They keep the package lightweight, headless and host-controlled. Each can be tightened in the host application, and some may become opt-in features later.
+
+### Message reporting is intentionally unrestricted
+
+`Messenger::report()` records a report from any identity against any message; it does **not** require the reporter to be a participant in that message's conversation. Reporting is treated as a host-application concern (moderation queues, abuse handling), so authorization — including "may this identity report this message?" — belongs to the host. The package only guarantees that a given reporter reports a given message at most once. If you need participant-only reporting, gate the call in your application or add a custom check before invoking `report()`.
+
+### The send pipeline is fully configurable — and that includes the safety pipes
+
+The default `messenger.pipeline` provides the package's core guarantees:
+
+| Pipe | Guarantee |
+| --- | --- |
+| `EnsureParticipantsAreValid` | Sender and recipient differ; a participant cannot message itself. |
+| `EnsureConversationIsNotBlocked` | No send while either side has blocked/spammed (mutual). |
+| `EnsureMessageHasContent` | Rejects empty messages (no body and no attachments). |
+| `EnsureAttachmentsAreValid` | Enforces attachment count, size and type limits. |
+| `EnsureReplyIsValid` | A reply must reference an existing message in the same conversation. |
+
+The pipeline is config-driven so hosts can insert their own moderation/filtering pipes. The trade-off: **removing a default pipe removes the guarantee it provides.** If you customise `messenger.pipeline`, keep the pipes whose guarantees you still want — e.g. dropping `EnsureMessageHasContent` will allow empty messages to persist. Add to the list; only remove a default pipe when you deliberately want to drop its check.
+
+### No database-level foreign keys
+
+Migrations link conversations, messages, participants and attachments through **indexed columns without foreign-key constraints**. This is deliberate: participants/senders are morphable (so a single FK can't express them), the schema stays portable across database engines, and the domain never performs true deletes (clearing is a visibility reset). Referential integrity is maintained by the package's actions, which always write related rows inside a single transaction. Applications that want database-enforced cascades can add their own follow-up migration with `foreign()` constraints suited to their stack.
+
+### Realtime broadcasts are lightweight notifications
+
+`MessageSentBroadcast` carries core scalar fields (`id`, `conversation_id`, `sender_type`, `sender_id`, `body`, `reply_to_id`, `created_at`) but **not** attachment metadata. The broadcast is a "a message arrived" signal; clients render attachment-only or mixed messages by loading the message (e.g. via `Messenger::messages()`), keeping the realtime payload small and the database authoritative. If you need attachments inline, broadcast a custom event (or override `broadcastWith()`) that includes them.
+
+### Attachment validation is metadata-based
+
+`EnsureAttachmentsAreValid` checks the client-reported extension and MIME type against the configured allow-lists, plus per-file size and per-message count. It does **not** inspect file contents, sniff true types, or scan for malware/archive abuse. This baseline is suitable for trusted or moderated flows. For untrusted input, add a custom `SendPipe` that performs deep content inspection or virus scanning, or enforce it in host-application policies.
+

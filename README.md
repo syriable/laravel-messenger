@@ -147,6 +147,8 @@ Echo.private(`messenger.conversation.${conversationId}`)
     .listen('.message.sent', (e) => console.log(e));
 ```
 
+The broadcast is a lightweight notification — it carries the message's core fields but **not** attachment metadata. Clients render attachment-only or mixed messages by loading the message (e.g. `Messenger::messages()`). To include attachments inline, broadcast a custom event or override `broadcastWith()`.
+
 ## Customizing the send pipeline
 
 Messages pass through a composable, configurable pipeline before they are stored. Add your own moderation / filtering pipes:
@@ -180,9 +182,13 @@ class ProfanityFilter implements SendPipe
 }
 ```
 
+> The default pipes provide the package's core guarantees (valid participants, mutual block/spam, non-empty messages, attachment limits, valid replies). The pipeline is yours to customise, but **removing a default pipe removes the guarantee it provides** — e.g. dropping `EnsureMessageHasContent` lets empty messages persist. Add pipes freely; only remove a default one when you intend to drop its check. Note that `EnsureAttachmentsAreValid` validates client-reported type/size/count metadata only — add your own pipe for deep content inspection or virus scanning of untrusted uploads. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#design-constraints--trade-offs-v1).
+
 ## Authorization
 
 The package is **not** responsible for business authorization (no policies, roles or ACL). Your application decides who may message whom. The package only enforces internal messaging constraints: blocked / spam conversations, participant membership and message validity.
+
+Consistent with this, **message reporting is unrestricted**: `Messenger::report()` accepts a report from any identity against any message and does not require the reporter to be a participant. Gate it in your application if you need participant-only reporting.
 
 ## Architecture
 
