@@ -6,6 +6,8 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 ### Fixed
 
+- Correct the documented `vendor:publish` tags to `messenger-migrations` and `messenger-config` (Spatie derives them from the package short name), and state that publishing the migrations is required (#43).
+- Stop calling `runsMigrations()`: migrations ship as `.php.stub` files that Laravel's migrator cannot execute, so it gave a false impression of auto-migration. The publish-then-migrate workflow is now the documented path (#44).
 - Dispatch **all** domain events (participant-state and reporting events, not just send events) after the enclosing transaction commits, via `ShouldDispatchAfterCommit` on the event classes (#35).
 - Re-validate reply visibility inside the write transaction so a clear between the pipeline and persist still rejects the reply (#37).
 - Remove the dead `Syriable\Messenger\Database\Factories\` → `database/factories/` autoload mapping (no such directory) (#38).

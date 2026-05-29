@@ -32,17 +32,18 @@ It is **Laravel-native, event-driven, performance-oriented and extensible by com
 composer require syriable/laravel-messenger
 ```
 
-Publish and run the migrations:
+Publishing the migrations is **required** — the package ships them as
+customisable stubs and does not run them automatically. Publish, then migrate:
 
 ```bash
-php artisan vendor:publish --tag="laravel-messenger-migrations"
+php artisan vendor:publish --tag="messenger-migrations"
 php artisan migrate
 ```
 
 Optionally publish the config file:
 
 ```bash
-php artisan vendor:publish --tag="laravel-messenger-config"
+php artisan vendor:publish --tag="messenger-config"
 ```
 
 ## Setup

@@ -15,13 +15,18 @@ class MessengerServiceProvider extends PackageServiceProvider
         /*
          * A headless, backend-only messaging domain platform.
          *
+         * Migrations ship as publishable stubs (so host apps can customise table
+         * names/columns before they run). Laravel's migrator does not execute
+         * `.php.stub` files, so we intentionally do not call runsMigrations();
+         * the migrations must be published first. See the README for the setup
+         * steps.
+         *
          * https://github.com/spatie/laravel-package-tools
          */
         $package
             ->name('laravel-messenger')
             ->hasConfigFile()
-            ->discoversMigrations()
-            ->runsMigrations();
+            ->discoversMigrations();
     }
 
     public function packageRegistered(): void
