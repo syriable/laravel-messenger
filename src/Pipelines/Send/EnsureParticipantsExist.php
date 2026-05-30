@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Syriable\Messenger\Contracts\MessengerParticipant;
+use Syriable\Messenger\Contracts\SendPipe;
 use Syriable\Messenger\Data\PendingMessage;
 use Syriable\Messenger\Exceptions\InvalidParticipantException;
 

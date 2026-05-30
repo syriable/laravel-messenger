@@ -2,6 +2,7 @@
 
 namespace Syriable\Messenger\Support;
 
+use Illuminate\Support\Facades\DB;
 use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Exceptions\InvalidParticipantException;
 use Syriable\Messenger\Models\Conversation;
@@ -25,5 +26,24 @@ trait ResolvesParticipant
         }
 
         return $row;
+    }
+
+    /**
+     * Apply an unread-resetting state change (e.g. mark-as-read, clear) safely
+     * against a concurrent inbound increment. The participant row is locked for
+     * the duration so an increment that lands during the reset is serialised
+     * rather than silently overwritten.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function applyLockedReset(Participant $row, array $attributes): Participant
+    {
+        return DB::transaction(function () use ($row, $attributes) {
+            $locked = $row->newQuery()->lockForUpdate()->find($row->getKey()) ?? $row;
+
+            $locked->forceFill($attributes)->save();
+
+            return $locked;
+        });
     }
 }

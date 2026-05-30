@@ -1,7 +1,9 @@
 <?php
 
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Exceptions\InvalidAttachmentException;
 use Syriable\Messenger\Exceptions\InvalidParticipantException;
 use Syriable\Messenger\Exceptions\InvalidReportException;
@@ -157,24 +159,24 @@ it('clamps a negative limit to a single result instead of returning everything',
 
 // Issue #58 — ConversationKey is collision-proof against separator characters.
 it('produces distinct conversation keys for separator-bearing identifiers', function () {
-    $make = function (string $type, string $id) {
-        return new class($type, $id) extends User
+    $make = fn (string $type, string $id): MessengerParticipant => new class($type, $id) implements MessengerParticipant
+    {
+        public function __construct(private string $morph, private string $id) {}
+
+        public function getMorphClass(): string
         {
-            public function __construct(private string $morph, private string $key)
-            {
-                parent::__construct();
-            }
+            return $this->morph;
+        }
 
-            public function getMorphClass(): string
-            {
-                return $this->morph;
-            }
+        public function getKey(): string
+        {
+            return $this->id;
+        }
 
-            public function getKey()
-            {
-                return $this->key;
-            }
-        };
+        public function messengerParticipations(): MorphMany
+        {
+            throw new RuntimeException('not needed for key generation');
+        }
     };
 
     // Two pairs that would collide under naive "type#id" + "|" joining.
