@@ -63,6 +63,10 @@ class Messenger
     /**
      * The visible messages of a conversation for a participant, chronologically.
      *
+     * Options: limit (?int), and the mutually-exclusive keyset cursors
+     * before_id / after_id for scroll-up / load-newer pagination on large
+     * conversations.
+     *
      * @return Collection<int, Message>
      */
     public function messages(Conversation $conversation, MessengerParticipant $participant, array $options = []): Collection

@@ -67,6 +67,30 @@ class User extends Model implements MessengerParticipant
 
 Participants are morphable, so different model types can message each other (e.g. a `Buyer` and a `SupportAgent`).
 
+### Register a morph map (recommended for production)
+
+Participant identity is stored as the model's `getMorphClass()` — by default the
+fully-qualified class name (`App\Models\User`). If you later rename or move that
+class, every stored `participant_type` becomes stale and the participant's
+conversations silently disappear from their inbox. Register a **morph map**
+before you run the first migration so the database stores a stable alias instead
+of the raw class name:
+
+```php
+// AppServiceProvider::boot() — register BEFORE the first `php artisan migrate`
+use Illuminate\Database\Eloquent\Relations\Relation;
+
+Relation::enforceMorphMap([
+    'user' => \App\Models\User::class,
+    'agent' => \App\Models\SupportAgent::class,
+]);
+```
+
+With the map in place, `participant_type` stores `'user'` instead of
+`'App\Models\User'`, making your data portable across class renames. If you adopt
+a morph map on an **existing** install, migrate the stored `participant_type`
+(and `sender_type`) values to the new aliases in the same deployment.
+
 ## Usage
 
 ### Sending messages
@@ -101,9 +125,19 @@ A `reply_to` reference must point to an existing message **in the same conversat
 $conversations = $alice->inbox();
 $conversations = $alice->inbox(['include_archived' => true, 'starred' => true, 'limit' => 25]);
 
+// Eager-load the participant models (e.g. Users) behind each conversation in a
+// single grouped query, so rendering names/avatars is N+1-free (see below).
+$conversations = $alice->inbox(['with_participant_models' => true]);
+
 // Messages, chronological (newest at the bottom), respecting the viewer's cleared history
 $conversation = Messenger::between($alice, $bob);
 $messages = Messenger::messages($conversation, $alice, ['limit' => 50]);
+
+// Keyset pagination for large conversations (mutually exclusive cursors):
+// load the most recent page on open, then the previous page as the user scrolls up.
+$latest = Messenger::messages($conversation, $alice, ['limit' => 50]);
+$older  = Messenger::messages($conversation, $alice, ['before_id' => $latest->first()->id, 'limit' => 50]);
+$newer  = Messenger::messages($conversation, $alice, ['after_id' => $latest->last()->id, 'limit' => 50]);
 
 // Unread totals (denormalized — no message scanning; archived excluded by default)
 $alice->unreadMessagesCount();               // total unread messages
@@ -112,6 +146,18 @@ Messenger::unreadCount($alice);              // total unread messages
 Messenger::unreadConversations($alice);      // number of conversations with unread
 Messenger::unreadCount($alice, includeArchived: true); // include archived threads
 ```
+
+Cursors are **keyset** (not offset) and exclude the cursor message itself, so
+they stay correct as new messages arrive and never re-scan skipped rows. The
+result is always returned in chronological order regardless of direction, and a
+cursor that does not belong to the conversation throws `InvalidArgumentException`.
+
+> **Inbox N+1.** `inbox()` is N+1-free for the package's own relations, but it
+> does **not** load the polymorphic model behind each participant unless you ask
+> it to. If you render participant names or avatars, pass
+> `['with_participant_models' => true]` so the Users are loaded in one grouped
+> query — otherwise resolving `otherParticipantFor($alice)->participant` lazily
+> issues one query per conversation.
 
 ### Conversation state (per participant)
 
@@ -130,6 +176,51 @@ Messenger::markAsUnread($conversation, $alice);// marks only the last received m
 ```php
 Messenger::report($message, $reporter, reason: 'spam', note: 'Unsolicited link');
 ```
+
+## Handling domain exceptions in the host application
+
+The package is **headless**: when a messaging rule is violated it throws a typed
+**domain exception** and never converts it to an HTTP response, a
+`ValidationException`, or a flash message. Translating these into your UI/API is
+the host application's job. Every package exception extends a single base class,
+**`Syriable\Messenger\Exceptions\MessengerException`** (which extends
+`RuntimeException`), so you can catch them all in one place or handle subclasses
+individually.
+
+| Exception | Thrown when | Suggested mapping |
+| --- | --- | --- |
+| `ConversationBlockedException` | Sending into a conversation either side has blocked or marked as spam | 403 / inline notice |
+| `InvalidMessageException` | The message has no body and no attachments, or the body exceeds `max_body_length` | 422 |
+| `InvalidAttachmentException` | An attachment is empty, too large, over the per-message count, or a disallowed type/mime | 422 |
+| `InvalidReplyException` | `reply_to` points outside the conversation or to a message the sender has cleared | 422 |
+| `InvalidParticipantException` | The actor is not a member of the conversation, or a participant does not exist (with the optional existence guard) | 403 / 404 |
+| `InvalidReportException` | A report's reason/note exceeds its limit, or (with the optional guard) the reporter is not a participant | 422 |
+
+```php
+use Syriable\Messenger\Exceptions\MessengerException;
+
+try {
+    Messenger::send($from, $to, $payload);
+} catch (MessengerException $e) {
+    // Catches every package exception above. Catch specific subclasses first
+    // if you want different status codes or messages per failure.
+    return redirect()
+        ->route('conversations.show', $conversation)
+        ->withErrors(['message' => $e->getMessage()]);
+}
+```
+
+> **Prefer an explicit redirect target over `back()`.** `back()` relies on the
+> `Referer` header; API clients, Inertia/Livewire flows that strip it, and direct
+> POSTs fall back to `/`, silently dropping the error flash. Redirect to a named
+> route (the conversation view) so the error is always rendered. The same mapping
+> applies in API controllers (return a JSON error) and Livewire/Inertia layers.
+
+> **Duplicate submissions are a host responsibility.** The package has no
+> idempotency guard by design — calling `send()` twice with the same body stores
+> two messages. Prevent double-submits in your UI (disable the button on submit,
+> debounce, or carry a request id you de-duplicate on) just as you would for any
+> form POST.
 
 ## Events
 
