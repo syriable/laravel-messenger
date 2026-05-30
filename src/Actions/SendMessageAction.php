@@ -4,6 +4,7 @@ namespace Syriable\Messenger\Actions;
 
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Pipeline\Pipeline;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Syriable\Messenger\Contracts\MessengerParticipant;
@@ -179,7 +180,9 @@ class SendMessageAction
             ->value('cleared_at');
 
         if ($clearedAt !== null) {
-            $query->where('created_at', '>', $clearedAt);
+            // value() returns the raw column string (microsecond precision);
+            // normalise so the boundary keeps sub-second resolution (#63).
+            $query->where('created_at', '>', Carbon::parse($clearedAt)->format('Y-m-d H:i:s.u'));
         }
 
         if (! $query->exists()) {

@@ -18,9 +18,9 @@ return new class extends Migration
             // Denormalised pointers to the latest message, used to order the
             // inbox without joining or aggregating the messages table.
             $table->ulid('last_message_id')->nullable();
-            $table->timestamp('last_message_at')->nullable()->index();
+            $table->timestamp('last_message_at', 6)->nullable()->index();
 
-            $table->timestamps();
+            $table->timestamps(6);
         });
     }
 

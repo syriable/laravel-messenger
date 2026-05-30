@@ -41,7 +41,7 @@ class EnsureReplyIsValid implements SendPipe
         $clearedAt = $conversation->participantFor($message->sender)?->cleared_at;
 
         if ($clearedAt !== null) {
-            $query->where('created_at', '>', $clearedAt);
+            $query->where('created_at', '>', $clearedAt->format('Y-m-d H:i:s.u'));
         }
 
         if (! $query->exists()) {

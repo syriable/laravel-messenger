@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Syriable\Messenger\Support\HasPreciseTimestamps;
 use Syriable\Messenger\Support\Models;
 
 /**
@@ -27,6 +28,7 @@ use Syriable\Messenger\Support\Models;
  */
 class Message extends Model
 {
+    use HasPreciseTimestamps;
     use HasUlids;
 
     protected $guarded = [];

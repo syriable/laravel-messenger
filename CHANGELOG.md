@@ -6,6 +6,7 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 ### Fixed
 
+- Store messaging timestamps with microsecond precision (`timestamp(6)` columns + a `HasPreciseTimestamps` model trait) and compare clear/reply/inbox visibility boundaries at microsecond resolution, so a message sent in the same wall-clock second as a clear is no longer wrongly hidden (#63).
 - Widen the `body` column to `mediumText` so a message at the configured `max_body_length` always persists losslessly on MySQL/MariaDB, even with multibyte characters (#47).
 - `markAsUnread` is now a no-op when the participant has no visible received message (sender-only or cleared history), so the unread badge can never contradict the visible timeline (#50); it continues to mark a single message (#56).
 - Make the `markAsRead`/`clear` unread reset concurrency-safe via a locked transaction, so a concurrent inbound increment is no longer silently overwritten (#60).
@@ -19,6 +20,10 @@ All notable changes to `laravel-messenger` will be documented in this file.
 - `messenger:prune` command (and `Messenger::pruneAttachments()`) to garbage-collect orphaned attachment files left on disk after host-driven message/conversation deletion. Supports `--dry-run` and `--disk` (#49).
 - Optional `messenger.validation.verify_participants_exist` guard: reject sends to a non-existent sender/recipient ("ghost" participant). Off by default (#54).
 - Optional `messenger.reports.participants_only` guard: restrict message reporting to conversation participants. Off by default (#57).
+
+### Tests
+
+- Add cross-model (User ↔ Agent) integration coverage, an in-process concurrency stress test, and standalone consuming-app / multi-process QA harnesses under `scripts/` (documented in `CONTRIBUTING.md`) to guard morph messaging, the broadcast contract, spam flows and the first-message race against regression (#64).
 
 ### Documentation
 

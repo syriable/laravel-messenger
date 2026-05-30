@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('reason')->nullable();
             $table->text('note')->nullable();
 
-            $table->timestamps();
+            $table->timestamps(6);
 
             // A reporter may report a given message only once.
             $table->unique(['message_id', 'reporter_type', 'reporter_id'], 'messenger_report_unique');

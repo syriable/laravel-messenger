@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Syriable\Messenger\Contracts\MessengerParticipant;
+use Syriable\Messenger\Support\HasPreciseTimestamps;
 use Syriable\Messenger\Support\Models;
 
 /**
@@ -23,6 +24,7 @@ use Syriable\Messenger\Support\Models;
  */
 class Conversation extends Model
 {
+    use HasPreciseTimestamps;
     use HasUlids;
 
     protected $guarded = [];

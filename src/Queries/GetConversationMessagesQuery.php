@@ -42,7 +42,9 @@ class GetConversationMessagesQuery
             ->with(['attachments', 'replyTo'])
             ->when(
                 $row->cleared_at !== null,
-                fn ($query) => $query->where('created_at', '>', $row->cleared_at),
+                // Format with microseconds so the boundary is not truncated to
+                // the second when bound into the query (#63).
+                fn ($query) => $query->where('created_at', '>', $row->cleared_at->format('Y-m-d H:i:s.u')),
             );
 
         if ($limit !== null) {

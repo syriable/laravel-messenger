@@ -52,6 +52,13 @@ class TestCase extends Orchestra
             $table->timestamps();
         });
 
+        // A second, distinct morph participant type for cross-model coverage.
+        Schema::create('agents', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->nullable();
+            $table->timestamps();
+        });
+
         $migrations = collect(File::files(__DIR__.'/../database/migrations'))
             ->sortBy(fn ($file) => $file->getFilename());
 

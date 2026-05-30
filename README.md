@@ -46,6 +46,10 @@ Optionally publish the config file:
 php artisan vendor:publish --tag="messenger-config"
 ```
 
+> The migrations use microsecond-precision timestamps (`timestamp(6)`) so the
+> clear/visibility boundary stays correct when events share a wall-clock second.
+> If you publish a fresh copy over an older install, re-check those columns.
+
 ## Setup
 
 Add the `Messageable` trait and `MessengerParticipant` contract to any model that can take part in a conversation:

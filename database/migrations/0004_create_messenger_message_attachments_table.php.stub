@@ -22,7 +22,7 @@ return new class extends Migration
             // File size in bytes.
             $table->unsignedBigInteger('size')->default(0);
 
-            $table->timestamps();
+            $table->timestamps(6);
         });
     }
 

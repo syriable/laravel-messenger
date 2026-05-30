@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use Syriable\Messenger\Support\HasPreciseTimestamps;
 use Syriable\Messenger\Support\Models;
 
 /**
@@ -22,6 +23,7 @@ use Syriable\Messenger\Support\Models;
  */
 class MessageAttachment extends Model
 {
+    use HasPreciseTimestamps;
     use HasUlids;
 
     protected $guarded = [];
