@@ -9,6 +9,7 @@ use Syriable\Messenger\Pipelines\Send\EnsureAttachmentsAreValid;
 use Syriable\Messenger\Pipelines\Send\EnsureConversationIsNotBlocked;
 use Syriable\Messenger\Pipelines\Send\EnsureMessageHasContent;
 use Syriable\Messenger\Pipelines\Send\EnsureParticipantsAreValid;
+use Syriable\Messenger\Pipelines\Send\EnsureParticipantsExist;
 use Syriable\Messenger\Pipelines\Send\EnsureReplyIsValid;
 
 // Configuration for syriable/laravel-messenger.
@@ -118,6 +119,7 @@ return [
     */
     'pipeline' => [
         EnsureParticipantsAreValid::class,
+        EnsureParticipantsExist::class,
         EnsureConversationIsNotBlocked::class,
         EnsureMessageHasContent::class,
         EnsureAttachmentsAreValid::class,

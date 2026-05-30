@@ -47,6 +47,11 @@ class EnsureAttachmentsAreValid implements SendPipe
                 throw InvalidAttachmentException::indeterminateSize($name);
             }
 
+            // Reject empty (zero-byte) uploads unless explicitly allowed.
+            if ($size <= 0 && ! config('messenger.attachments.allow_empty', false)) {
+                throw InvalidAttachmentException::empty($name);
+            }
+
             // Size limit (config value is in kilobytes).
             if ($maxSize > 0 && $size > $maxSize * 1024) {
                 throw InvalidAttachmentException::tooLarge($name, $maxSize);

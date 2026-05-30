@@ -88,6 +88,8 @@ $alice->sendMessageTo($bob, [
 
 A valid message must contain a **body, at least one attachment, or both**.
 
+A `reply_to` reference must point to an existing message **in the same conversation that is still visible to the sender** (i.e. created after the sender's clear timestamp). A reply on a brand-new conversation, to a message from another conversation, or to a message the sender has cleared is rejected with `InvalidReplyException`. Empty (zero-byte) and over-limit attachments are rejected by the send pipeline; oversized original filenames are truncated to fit storage.
+
 ### Reading the inbox & messages
 
 ```php
@@ -192,7 +194,12 @@ class ProfanityFilter implements SendPipe
 
 The package is **not** responsible for business authorization (no policies, roles or ACL). Your application decides who may message whom. The package only enforces internal messaging constraints: blocked / spam conversations, participant membership and message validity.
 
-Consistent with this, **message reporting is unrestricted**: `Messenger::report()` accepts a report from any identity against any message and does not require the reporter to be a participant. Gate it in your application if you need participant-only reporting.
+Consistent with this, **message reporting is unrestricted by default**: `Messenger::report()` accepts a report from any identity against any message and does not require the reporter to be a participant. Set `messenger.reports.participants_only` to `true` to require the reporter to belong to the message's conversation, or gate it in your application.
+
+Two further opt-in guards are available (both **off by default** to preserve the headless contract):
+
+- `messenger.validation.verify_participants_exist` — when `true`, the send pipeline rejects a sender/recipient that does not exist in the database (preventing "ghost" participants).
+- `messenger.reports.participants_only` — participant-only reporting, as above.
 
 ## Security notes
 
@@ -201,6 +208,7 @@ Because the package is headless and host-owned, a few responsibilities sit with 
 - **Attachment access.** `$attachment->url` returns `Storage::disk($disk)->url($path)` with no signing or authorization. If you store attachments on a **public** disk, those URLs are world-readable. Use a private disk and serve files through an authorized controller (or `temporaryUrl()` on a disk that supports it). The package never gates file access for you.
 - **Mass assignment.** Package models use `$guarded = []` and are intended to be written **only** through the package's actions (`Messenger::send()`, `report()`, etc.), never filled directly from request input. Do not do `Message::create($request->all())` or `$participant->update($request->all())` — that would let callers tamper with fields like `unread_count`, `blocked_at` or `sender_id`. Treat the models as internal domain objects.
 - **Blocked / spam conversations stay in the inbox.** Blocking or marking spam prevents *sending* (mutually) but, per the v1 spec, keeps history visible and stored — so these conversations still appear in `Messenger::inbox()`. Each returned `Conversation` exposes the participant's `blocked_at` / `spammed_at` state for your UI to filter or badge as you see fit.
+- **Deleting participants is host-owned.** The morphable design precludes database foreign keys, so deleting a host participant model does not cascade: their `messenger_participants`, messages, attachments and reports remain, and `morphTo` accessors like `$message->sender` then resolve to `null`. Treat those relations as nullable in your UI. The package does not yet ship a prune command; when you delete an account, also remove its messenger rows (and, for attachments, the underlying files) — a supported `messenger:prune` command is planned.
 
 ## Architecture
 

@@ -13,4 +13,9 @@ class InvalidParticipantException extends MessengerException
     {
         return new self('The given participant does not belong to this conversation.');
     }
+
+    public static function doesNotExist(): self
+    {
+        return new self('The given participant does not exist.');
+    }
 }

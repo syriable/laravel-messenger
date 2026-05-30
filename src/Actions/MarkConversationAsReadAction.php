@@ -21,10 +21,10 @@ class MarkConversationAsReadAction
     {
         $row = $this->resolveParticipant($conversation, $participant);
 
-        $row->forceFill([
+        $row = $this->applyLockedReset($row, [
             'last_read_at' => now(),
             'unread_count' => 0,
-        ])->save();
+        ]);
 
         ConversationRead::dispatch($row);
 
