@@ -16,7 +16,10 @@ use Syriable\Messenger\Support\Models;
  * eager-loads relations to avoid N+1 queries, relying on the
  * (participant_type, participant_id) and (last_message_at) indexes.
  *
- * Supported options: include_archived (bool), starred (bool), limit (?int).
+ * Supported options: include_archived (bool), starred (bool), limit (?int),
+ * with_participant_models (bool). The last eager-loads the polymorphic model
+ * behind each Participant row (e.g. the User) so the host can render names and
+ * avatars without an N+1 (#70).
  *
  * @return Collection<int, Conversation>
  */
@@ -29,7 +32,14 @@ class GetInboxConversationsQuery
 
         $includeArchived = (bool) ($options['include_archived'] ?? false);
         $starredOnly = (bool) ($options['starred'] ?? false);
+        $withParticipantModels = (bool) ($options['with_participant_models'] ?? false);
         $limit = Limit::normalize($options['limit'] ?? null);
+
+        // Eager-load the morphTo target in a single grouped query pass when the
+        // host needs participant names/avatars, instead of one lookup per row.
+        $participantsRelation = $withParticipantModels
+            ? 'participants.participant'
+            : 'participants';
 
         return Models::conversation()::query()
             ->join("{$participants} as mp", 'mp.conversation_id', '=', "{$conversations}.id")
@@ -45,7 +55,7 @@ class GetInboxConversationsQuery
             ->orderByDesc("{$conversations}.last_message_at")
             ->orderByDesc("{$conversations}.id")
             ->when($limit !== null, fn ($query) => $query->limit($limit))
-            ->with(['participants', 'lastMessage'])
+            ->with([$participantsRelation, 'lastMessage'])
             ->select("{$conversations}.*")
             ->get();
     }
