@@ -16,6 +16,7 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 ### Added
 
+- `messenger:prune` command (and `Messenger::pruneAttachments()`) to garbage-collect orphaned attachment files left on disk after host-driven message/conversation deletion. Supports `--dry-run` and `--disk` (#49).
 - Optional `messenger.validation.verify_participants_exist` guard: reject sends to a non-existent sender/recipient ("ghost" participant). Off by default (#54).
 - Optional `messenger.reports.participants_only` guard: restrict message reporting to conversation participants. Off by default (#57).
 

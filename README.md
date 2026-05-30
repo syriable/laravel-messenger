@@ -208,7 +208,26 @@ Because the package is headless and host-owned, a few responsibilities sit with 
 - **Attachment access.** `$attachment->url` returns `Storage::disk($disk)->url($path)` with no signing or authorization. If you store attachments on a **public** disk, those URLs are world-readable. Use a private disk and serve files through an authorized controller (or `temporaryUrl()` on a disk that supports it). The package never gates file access for you.
 - **Mass assignment.** Package models use `$guarded = []` and are intended to be written **only** through the package's actions (`Messenger::send()`, `report()`, etc.), never filled directly from request input. Do not do `Message::create($request->all())` or `$participant->update($request->all())` — that would let callers tamper with fields like `unread_count`, `blocked_at` or `sender_id`. Treat the models as internal domain objects.
 - **Blocked / spam conversations stay in the inbox.** Blocking or marking spam prevents *sending* (mutually) but, per the v1 spec, keeps history visible and stored — so these conversations still appear in `Messenger::inbox()`. Each returned `Conversation` exposes the participant's `blocked_at` / `spammed_at` state for your UI to filter or badge as you see fit.
-- **Deleting participants is host-owned.** The morphable design precludes database foreign keys, so deleting a host participant model does not cascade: their `messenger_participants`, messages, attachments and reports remain, and `morphTo` accessors like `$message->sender` then resolve to `null`. Treat those relations as nullable in your UI. The package does not yet ship a prune command; when you delete an account, also remove its messenger rows (and, for attachments, the underlying files) — a supported `messenger:prune` command is planned.
+- **Deleting participants is host-owned.** The morphable design precludes database foreign keys, so deleting a host participant model does not cascade: their `messenger_participants`, messages, attachments and reports remain, and `morphTo` accessors like `$message->sender` then resolve to `null`. Treat those relations as nullable in your UI. When you delete an account, also remove its messenger rows.
+
+## Pruning attachment files
+
+Messages are immutable and the package never hard-deletes, so when you delete messages/conversations yourself the underlying attachment files stay on disk. Reclaim them with the bundled command, which removes files under the configured attachments directory that no longer have a matching database row:
+
+```bash
+php artisan messenger:prune                 # delete orphaned attachment files
+php artisan messenger:prune --dry-run       # list them without deleting
+php artisan messenger:prune --disk=s3       # scan a specific disk
+```
+
+Or programmatically (returns the orphaned paths):
+
+```php
+Messenger::pruneAttachments();              // delete and return
+Messenger::pruneAttachments(dryRun: true);  // list only
+```
+
+Pruning is explicit and opt-in — it never runs automatically — so it is safe against the immutability model.
 
 ## Architecture
 

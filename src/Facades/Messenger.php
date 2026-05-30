@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Syriable\Messenger\Models\Participant markAsRead(\Syriable\Messenger\Models\Conversation $conversation, \Syriable\Messenger\Contracts\MessengerParticipant $participant)
  * @method static \Syriable\Messenger\Models\Participant markAsUnread(\Syriable\Messenger\Models\Conversation $conversation, \Syriable\Messenger\Contracts\MessengerParticipant $participant)
  * @method static \Syriable\Messenger\Models\MessageReport report(\Syriable\Messenger\Models\Message $message, \Syriable\Messenger\Contracts\MessengerParticipant $reporter, ?string $reason = null, ?string $note = null)
+ * @method static \Illuminate\Support\Collection pruneAttachments(?string $disk = null, bool $dryRun = false)
  *
  * @see \Syriable\Messenger\Messenger
  */
