@@ -52,7 +52,7 @@ class MarkConversationAsUnreadAction
             })
             ->when(
                 $row->cleared_at !== null,
-                fn ($query) => $query->where('created_at', '>', $row->cleared_at),
+                fn ($query) => $query->where('created_at', '>', $row->cleared_at->format('Y-m-d H:i:s.u')),
             )
             ->exists();
     }

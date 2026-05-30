@@ -22,7 +22,9 @@ return new class extends Migration
             // Lightweight reply reference (WhatsApp-style), never a thread.
             $table->ulid('reply_to_id')->nullable()->index();
 
-            $table->timestamps();
+            // Microsecond precision so the clear/reply visibility boundary is
+            // correct even when a clear and a send share a wall-clock second.
+            $table->timestamps(6);
 
             // Chronological retrieval within a conversation, newest at the bottom.
             $table->index(['conversation_id', 'created_at'], 'messenger_message_timeline');

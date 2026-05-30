@@ -19,18 +19,20 @@ return new class extends Migration
             $table->string('participant_id');
 
             // Participant-specific conversation state. The conversation itself
-            // remains neutral and shared between both participants.
-            $table->timestamp('archived_at')->nullable();
-            $table->timestamp('starred_at')->nullable();
-            $table->timestamp('blocked_at')->nullable();
-            $table->timestamp('spammed_at')->nullable();
-            $table->timestamp('cleared_at')->nullable();
-            $table->timestamp('last_read_at')->nullable();
+            // remains neutral and shared between both participants. Microsecond
+            // precision (6) keeps clear/read boundaries correct even when
+            // multiple events land in the same wall-clock second.
+            $table->timestamp('archived_at', 6)->nullable();
+            $table->timestamp('starred_at', 6)->nullable();
+            $table->timestamp('blocked_at', 6)->nullable();
+            $table->timestamp('spammed_at', 6)->nullable();
+            $table->timestamp('cleared_at', 6)->nullable();
+            $table->timestamp('last_read_at', 6)->nullable();
 
             // Denormalised unread counter for fast unread retrieval.
             $table->unsignedInteger('unread_count')->default(0);
 
-            $table->timestamps();
+            $table->timestamps(6);
 
             // Only one participant row per (conversation, participant).
             $table->unique(['conversation_id', 'participant_type', 'participant_id'], 'messenger_participant_unique');
