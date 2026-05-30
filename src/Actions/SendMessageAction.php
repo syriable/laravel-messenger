@@ -43,6 +43,10 @@ use Throwable;
  *    time-of-use gap after the pipeline ran.
  *  - The recipient unread counter is incremented atomically in SQL so parallel
  *    sends cannot lose an update.
+ *  - The write transaction is retried a bounded number of times on transient
+ *    concurrency errors (deadlock, lock-wait timeout, SQLite "database is
+ *    locked"), so a contended send is not silently dropped. Pair SQLite with a
+ *    busy_timeout, or use MySQL/PostgreSQL, for heavy parallel write load.
  *  - Domain events are dispatched only after all enclosing transactions have
  *    committed, so listeners and broadcasts always observe persisted data even
  *    when the host wraps the send in its own transaction.
@@ -96,6 +100,13 @@ class SendMessageAction
     protected int $maxCreateAttempts = 3;
 
     /**
+     * Maximum attempts for the write transaction itself. Laravel re-runs the
+     * closure on detected concurrency errors (deadlock / lock-wait / SQLite
+     * "database is locked"), so a contended send retries instead of failing.
+     */
+    protected int $maxTransactionAttempts = 3;
+
+    /**
      * @param  array<int, StoredAttachment>  $stored
      */
     protected function persist(PendingMessage $pending, array $stored): Message
@@ -123,7 +134,7 @@ class SendMessageAction
                     $this->updateProjections($conversation, $sentMessage, $pending);
 
                     return [$conversation, $sentMessage, $created];
-                });
+                }, $this->maxTransactionAttempts);
 
                 // The events implement ShouldDispatchAfterCommit, so listeners
                 // and broadcasts run only after every enclosing transaction
