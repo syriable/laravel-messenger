@@ -6,6 +6,25 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 ### Fixed
 
+- Widen the `body` column to `mediumText` so a message at the configured `max_body_length` always persists losslessly on MySQL/MariaDB, even with multibyte characters (#47).
+- `markAsUnread` is now a no-op when the participant has no visible received message (sender-only or cleared history), so the unread badge can never contradict the visible timeline (#50); it continues to mark a single message (#56).
+- Make the `markAsRead`/`clear` unread reset concurrency-safe via a locked transaction, so a concurrent inbound increment is no longer silently overwritten (#60).
+- Clamp query `limit` options to a minimum of 1 so a zero/negative limit can no longer disable the `LIMIT` clause and return the entire result set (#53).
+- Truncate over-length attachment filenames (preserving the extension) so they always fit the `name` column on strict drivers (#52).
+- Reject empty (zero-byte) attachment uploads by default (`messenger.attachments.allow_empty`) (#55).
+- Make `ConversationKey` collision-proof via length-prefixed segment encoding, so custom morph aliases/keys containing `#` or `|` cannot collide (#58).
+
+### Added
+
+- Optional `messenger.validation.verify_participants_exist` guard: reject sends to a non-existent sender/recipient ("ghost" participant). Off by default (#54).
+- Optional `messenger.reports.participants_only` guard: restrict message reporting to conversation participants. Off by default (#57).
+
+### Documentation
+
+- Document the reply-target validity/visibility constraint near the README `reply_to` example (#59); the lack of cascading deletes and host-owned participant cleanup with nullable `morphTo` accessors (#48, #49); the single-message `markAsUnread` semantic; and the attachment metadata-validation limitation (#51).
+
+### Fixed (earlier)
+
 - Correct the documented `vendor:publish` tags to `messenger-migrations` and `messenger-config` (Spatie derives them from the package short name), and state that publishing the migrations is required (#43).
 - Stop calling `runsMigrations()`: migrations ship as `.php.stub` files that Laravel's migrator cannot execute, so it gave a false impression of auto-migration. The publish-then-migrate workflow is now the documented path (#44).
 - Dispatch **all** domain events (participant-state and reporting events, not just send events) after the enclosing transaction commits, via `ShouldDispatchAfterCommit` on the event classes (#35).

@@ -5,6 +5,7 @@ namespace Syriable\Messenger\Queries;
 use Illuminate\Support\Collection;
 use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Models\Conversation;
+use Syriable\Messenger\Support\Limit;
 use Syriable\Messenger\Support\Models;
 
 /**
@@ -28,7 +29,7 @@ class GetInboxConversationsQuery
 
         $includeArchived = (bool) ($options['include_archived'] ?? false);
         $starredOnly = (bool) ($options['starred'] ?? false);
-        $limit = $options['limit'] ?? null;
+        $limit = Limit::normalize($options['limit'] ?? null);
 
         return Models::conversation()::query()
             ->join("{$participants} as mp", 'mp.conversation_id', '=', "{$conversations}.id")
@@ -43,7 +44,7 @@ class GetInboxConversationsQuery
             })
             ->orderByDesc("{$conversations}.last_message_at")
             ->orderByDesc("{$conversations}.id")
-            ->when($limit !== null, fn ($query) => $query->limit((int) $limit))
+            ->when($limit !== null, fn ($query) => $query->limit($limit))
             ->with(['participants', 'lastMessage'])
             ->select("{$conversations}.*")
             ->get();

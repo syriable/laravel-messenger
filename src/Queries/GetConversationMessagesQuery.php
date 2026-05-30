@@ -7,6 +7,7 @@ use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Exceptions\InvalidParticipantException;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
+use Syriable\Messenger\Support\Limit;
 
 /**
  * Retrieves the messages of a conversation as visible to a given participant,
@@ -35,7 +36,7 @@ class GetConversationMessagesQuery
             throw InvalidParticipantException::notInConversation();
         }
 
-        $limit = $options['limit'] ?? null;
+        $limit = Limit::normalize($options['limit'] ?? null);
 
         $query = $conversation->messages()
             ->with(['attachments', 'replyTo'])
@@ -49,7 +50,7 @@ class GetConversationMessagesQuery
             return $query
                 ->orderByDesc('created_at')
                 ->orderByDesc('id')
-                ->limit((int) $limit)
+                ->limit($limit)
                 ->get()
                 ->sortBy([['created_at', 'asc'], ['id', 'asc']])
                 ->values();

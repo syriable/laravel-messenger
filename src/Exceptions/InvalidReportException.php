@@ -13,4 +13,9 @@ class InvalidReportException extends MessengerException
     {
         return new self("The report note may not be longer than {$max} characters.");
     }
+
+    public static function notAParticipant(): self
+    {
+        return new self('Only a participant of the conversation may report this message.');
+    }
 }

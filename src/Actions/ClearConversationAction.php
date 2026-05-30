@@ -22,11 +22,11 @@ class ClearConversationAction
     {
         $row = $this->resolveParticipant($conversation, $participant);
 
-        $row->forceFill([
+        $row = $this->applyLockedReset($row, [
             'cleared_at' => now(),
             'unread_count' => 0,
             'last_read_at' => now(),
-        ])->save();
+        ]);
 
         ConversationCleared::dispatch($row);
 

@@ -23,6 +23,7 @@ class ReportMessageAction
         ?string $note = null,
     ): MessageReport {
         $this->guardLength($reason, $note);
+        $this->guardMembership($message, $reporter);
 
         /** @var MessageReport $report */
         $report = Models::report()::query()->updateOrCreate(
@@ -54,6 +55,27 @@ class ReportMessageAction
 
         if ($note !== null && $maxNote !== null && mb_strlen($note) > (int) $maxNote) {
             throw InvalidReportException::noteTooLong((int) $maxNote);
+        }
+    }
+
+    /**
+     * When participants_only is enabled, the reporter must belong to the
+     * message's conversation. Off by default — reporting is host-authorised.
+     */
+    private function guardMembership(Message $message, MessengerParticipant $reporter): void
+    {
+        if (! config('messenger.reports.participants_only', false)) {
+            return;
+        }
+
+        $isParticipant = Models::participant()::query()
+            ->where('conversation_id', $message->conversation_id)
+            ->where('participant_type', $reporter->getMorphClass())
+            ->where('participant_id', $reporter->getKey())
+            ->exists();
+
+        if (! $isParticipant) {
+            throw InvalidReportException::notAParticipant();
         }
     }
 }

@@ -28,4 +28,9 @@ class InvalidAttachmentException extends MessengerException
     {
         return new self("Attachment [{$name}] could not be stored.");
     }
+
+    public static function empty(string $name): self
+    {
+        return new self("Attachment [{$name}] is empty (zero bytes).");
+    }
 }

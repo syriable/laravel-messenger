@@ -48,10 +48,35 @@ class AttachmentService
         return new StoredAttachment(
             disk: $disk,
             path: $path,
-            name: $file->getClientOriginalName(),
+            name: $this->normalizeName($file->getClientOriginalName()),
             mimeType: $file->getClientMimeType() ?: ($file->getMimeType() ?: 'application/octet-stream'),
             extension: $extension ?: null,
             size: $file->getSize() ?: 0,
         );
+    }
+
+    /**
+     * Ensure the stored original filename fits the `name` column, preserving the
+     * extension where possible so it never overflows or errors on strict
+     * database drivers.
+     */
+    protected function normalizeName(string $name): string
+    {
+        $max = (int) config('messenger.attachments.max_name_length', 255);
+
+        if ($max <= 0 || mb_strlen($name) <= $max) {
+            return $name;
+        }
+
+        $extension = pathinfo($name, PATHINFO_EXTENSION);
+        $suffix = $extension !== '' ? '.'.$extension : '';
+        $keep = $max - mb_strlen($suffix);
+
+        if ($keep <= 0) {
+            // Extension alone is longer than the limit; hard-truncate the whole name.
+            return mb_substr($name, 0, $max);
+        }
+
+        return mb_substr($name, 0, $keep).$suffix;
     }
 }

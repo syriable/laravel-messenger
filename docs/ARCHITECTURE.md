@@ -103,7 +103,27 @@ Migrations link conversations, messages, participants and attachments through **
 
 ### Attachment validation is metadata-based
 
-`EnsureAttachmentsAreValid` checks the client-reported extension and MIME type against the configured allow-lists, plus per-file size and per-message count. It does **not** inspect file contents, sniff true types, or scan for malware/archive abuse. This baseline is suitable for trusted or moderated flows. For untrusted input, add a custom `SendPipe` that performs deep content inspection or virus scanning, or enforce it in host-application policies.
+`EnsureAttachmentsAreValid` checks the client-reported extension and MIME type against the configured allow-lists, plus per-file size and per-message count. It does **not** inspect file contents, sniff true types, or scan for malware/archive abuse. This baseline is suitable for trusted or moderated flows. For untrusted input, add a custom `SendPipe` that performs deep content inspection or virus scanning, or enforce it in host-application policies. Empty (zero-byte) uploads are rejected by default (`messenger.attachments.allow_empty`), and over-length original filenames are truncated to fit the `name` column (`messenger.attachments.max_name_length`).
+
+### Manual "mark as unread" marks a single message
+
+`markAsUnread` sets the denormalised `unread_count` to **1** (the "last received message" semantic), not the true historical count — the counter never needs to exceed what the participant can act on. It is a **no-op** when the participant has no received message still visible to them (e.g. they only ever sent, or have cleared their history), so the badge can never show unread with nothing to read.
+
+### Read/clear resets are concurrency-safe
+
+`markAsRead` and `clear` reset `unread_count` to 0 under a row lock (`applyLockedReset`), serialising against the atomic inbound increment on send. A message that arrives during the reset is therefore counted correctly rather than silently overwritten. (Row locking is a no-op on SQLite; the guarantee applies on MySQL/Postgres.)
+
+### Read limits are clamped
+
+Query `limit` options are normalised by `Support\Limit`: a null/absent limit means "no limit", and any provided value is clamped to a minimum of 1. This prevents a zero or negative limit from silently disabling the `LIMIT` clause and returning the entire unbounded result set.
+
+### Conversation keys are collision-proof
+
+`ConversationKey` length-prefixes each segment (`len:type#len:id`, joined by `|`) so the separator characters can never be confused with content. Distinct participant pairs can never collapse to the same key, even with custom morph aliases or keys containing `#` or `|`.
+
+### No cascading deletes; participant deletion is host-owned
+
+Because participants are morphable there are no database foreign keys, so deleting a host participant does not cascade — their participant row, messages, attachments and reports remain, and `morphTo` accessors (`$message->sender`) then resolve to `null`. Read accessors should be treated as nullable. A supported `messenger:prune` command (orphaned rows + unreferenced attachment files) is planned; until then, hosts should remove a deleted account's messenger rows and attachment files themselves. Attachment files are only ever removed automatically on send-transaction rollback.
 
 ### Unread totals exclude archived but include blocked/spam
 
