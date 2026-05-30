@@ -123,7 +123,9 @@ Query `limit` options are normalised by `Support\Limit`: a null/absent limit mea
 
 ### No cascading deletes; participant deletion is host-owned
 
-Because participants are morphable there are no database foreign keys, so deleting a host participant does not cascade — their participant row, messages, attachments and reports remain, and `morphTo` accessors (`$message->sender`) then resolve to `null`. Read accessors should be treated as nullable. A supported `messenger:prune` command (orphaned rows + unreferenced attachment files) is planned; until then, hosts should remove a deleted account's messenger rows and attachment files themselves. Attachment files are only ever removed automatically on send-transaction rollback.
+Because participants are morphable there are no database foreign keys, so deleting a host participant does not cascade — their participant row, messages, attachments and reports remain, and `morphTo` accessors (`$message->sender`) then resolve to `null`. Read accessors should be treated as nullable; hosts should remove a deleted account's messenger rows themselves.
+
+Attachment files are only removed automatically on send-transaction rollback. Because the package never hard-deletes, files orphaned by host-driven message/conversation deletion are reclaimed explicitly with the `messenger:prune` command (or `Messenger::pruneAttachments()`), which deletes files under the configured attachments directory with no matching `messenger_message_attachments` row. The logic lives in `PruneAttachmentsAction` (a thin command wraps it); a `--dry-run` lists orphans without deleting, and `--disk` targets a specific disk. Pruning is opt-in and never runs automatically, keeping it safe against the immutability model.
 
 ### Unread totals exclude archived but include blocked/spam
 

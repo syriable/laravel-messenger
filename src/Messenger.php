@@ -8,6 +8,7 @@ use Syriable\Messenger\Actions\BlockConversationAction;
 use Syriable\Messenger\Actions\ClearConversationAction;
 use Syriable\Messenger\Actions\MarkConversationAsReadAction;
 use Syriable\Messenger\Actions\MarkConversationAsUnreadAction;
+use Syriable\Messenger\Actions\PruneAttachmentsAction;
 use Syriable\Messenger\Actions\ReportMessageAction;
 use Syriable\Messenger\Actions\SendMessageAction;
 use Syriable\Messenger\Actions\SpamConversationAction;
@@ -137,5 +138,16 @@ class Messenger
     public function report(Message $message, MessengerParticipant $reporter, ?string $reason = null, ?string $note = null): MessageReport
     {
         return app(ReportMessageAction::class)->execute($message, $reporter, $reason, $note);
+    }
+
+    /**
+     * Garbage-collect orphaned attachment files (on disk but with no matching
+     * database row). Returns the orphaned paths (deleted unless $dryRun).
+     *
+     * @return Collection<int, string>
+     */
+    public function pruneAttachments(?string $disk = null, bool $dryRun = false): Collection
+    {
+        return app(PruneAttachmentsAction::class)->execute($disk, $dryRun);
     }
 }

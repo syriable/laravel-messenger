@@ -5,6 +5,7 @@ namespace Syriable\Messenger;
 use Illuminate\Support\Facades\Event;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Syriable\Messenger\Commands\PruneAttachmentsCommand;
 use Syriable\Messenger\Events\MessageSent;
 use Syriable\Messenger\Listeners\BroadcastMessageSent;
 
@@ -26,7 +27,8 @@ class MessengerServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-messenger')
             ->hasConfigFile()
-            ->discoversMigrations();
+            ->discoversMigrations()
+            ->hasCommand(PruneAttachmentsCommand::class);
     }
 
     public function packageRegistered(): void
