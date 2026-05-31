@@ -4,6 +4,8 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 ## Unreleased
 
+## [0.10.0] - 2026-05-31
+
 ### Fixed
 
 - Retry the send write transaction a bounded number of times on transient concurrency errors (deadlock, lock-wait timeout, SQLite `database is locked`), so a contended send into an existing conversation is no longer silently dropped. Combined with the MySQL/PostgreSQL CI, this verifies that concurrent sends don't lose messages on production drivers; SQLite remains single-writer and should use WAL + a busy timeout, or be swapped for MySQL/PostgreSQL under heavy parallel writes (#76).
@@ -31,6 +33,7 @@ All notable changes to `laravel-messenger` will be documented in this file.
 ### Tests
 
 - Add cross-model (User ↔ Agent) integration coverage, an in-process concurrency stress test, and standalone consuming-app / multi-process QA harnesses under `scripts/` (documented in `CONTRIBUTING.md`) to guard morph messaging, the broadcast contract, spam flows and the first-message race against regression (#64).
+- Add keyset cursor pagination guard tests: unbounded cursor (no `limit`) returns the full visible range; a non-positive `limit` clamps to 1 instead of leaking the entire result set; `before_id` / `after_id` pointing at pre-clear messages correctly hide invisible history and surface only post-clear messages (#85, #87).
 
 ### Documentation
 
@@ -44,6 +47,10 @@ All notable changes to `laravel-messenger` will be documented in this file.
 - Add a security comment on `attachments.disk` in the published config warning that `$attachment->url` is unsigned and that sensitive files need a private disk + authorized route or `temporaryUrl()` (#80).
 - Document that duplicate-submission idempotency is a host responsibility — no de-duplication guard by design (#73, #83).
 - Document the reply-target validity/visibility constraint near the README `reply_to` example (#59); the lack of cascading deletes and host-owned participant cleanup with nullable `morphTo` accessors (#48, #49); the single-message `markAsUnread` semantic; and the attachment metadata-validation limitation (#51).
+- Warn in the `Messenger::messages()` usage example that omitting `limit` loads the entire visible history into memory; always pass a page size when paginating (#87).
+- Clarify that `markAsUnread()` sets `unread_count` to 1, not the participant's true historical unread count (#87).
+- Add a `Broadcast::channel()` authorization example and a callout that `'private' => false` (the default) means the channel is public and all payload fields are world-readable; recommend switching to `true` for private channels (#87).
+- Fix the published config pipeline example to include `EnsureParticipantsExist::class`, which was referenced in configuration documentation but absent from the example (#87).
 
 ### Fixed (earlier)
 
