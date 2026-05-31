@@ -11,6 +11,7 @@ use Syriable\Messenger\Pipelines\Send\EnsureMessageHasContent;
 use Syriable\Messenger\Pipelines\Send\EnsureParticipantsAreValid;
 use Syriable\Messenger\Pipelines\Send\EnsureParticipantsExist;
 use Syriable\Messenger\Pipelines\Send\EnsureReplyIsValid;
+use Syriable\Messenger\Support\DefaultParticipantPresenter;
 
 // Configuration for syriable/laravel-messenger.
 return [
@@ -49,6 +50,21 @@ return [
         'attachment' => MessageAttachment::class,
         'report' => MessageReport::class,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Participant presenter
+    |--------------------------------------------------------------------------
+    |
+    | Resolves a participant's display identity (name, avatar, handle, profile
+    | URL, timezone) for any UI. The domain stores only the morph type and key,
+    | so this is the single, swappable boundary for presentation. The default
+    | reads conventional attributes (name, avatar_url, username, ...) and falls
+    | back gracefully; point it at your own ParticipantPresenter implementation
+    | to take full control.
+    |
+    */
+    'presenter' => DefaultParticipantPresenter::class,
 
     /*
     |--------------------------------------------------------------------------

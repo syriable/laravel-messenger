@@ -91,3 +91,8 @@ it('keeps the participant and pipe contracts stable', function () {
         ->and(method_exists('Syriable\Messenger\Contracts\MessengerParticipant', 'messengerParticipations'))->toBeTrue()
         ->and(method_exists('Syriable\Messenger\Contracts\SendPipe', 'handle'))->toBeTrue();
 });
+
+it('keeps the participant presenter contract stable', function (string $method) {
+    expect(interface_exists('Syriable\Messenger\Contracts\ParticipantPresenter'))->toBeTrue()
+        ->and(method_exists('Syriable\Messenger\Contracts\ParticipantPresenter', $method))->toBeTrue();
+})->with(['displayName', 'avatarUrl', 'handle', 'profileUrl', 'timezone']);
