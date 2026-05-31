@@ -115,6 +115,78 @@ it('returns only starred conversations when starred is true', function () {
         ->and($starred->first()->id)->toBe($convA->id);
 });
 
+it('returns only conversations with unread messages when unread is true', function () {
+    $me = User::factory()->create();
+    $a = User::factory()->create();
+    $b = User::factory()->create();
+
+    // Both arrive as inbound messages, so both start unread for $me.
+    Messenger::send($a, $me, 'hi from a');
+    Messenger::send($b, $me, 'hi from b');
+
+    $convA = Messenger::between($me, $a);
+    Messenger::markAsRead($convA, $me);
+
+    $unread = app(GetInboxConversationsQuery::class)->execute($me, ['unread' => true]);
+
+    expect($unread)->toHaveCount(1)
+        ->and($unread->first()->id)->toBe(Messenger::between($me, $b)->id);
+});
+
+it('does not reorder the inbox when filtering by unread', function () {
+    $me = User::factory()->create();
+    $a = User::factory()->create();
+    $b = User::factory()->create();
+
+    inboxSendAt($a, $me, 'older', now()->copy()->setTime(9, 0));
+    inboxSendAt($b, $me, 'newer', now()->copy()->setTime(9, 30));
+
+    $unread = app(GetInboxConversationsQuery::class)->execute($me, ['unread' => true]);
+
+    // Both unread; ordering is still latest-activity-first, newest on top.
+    expect($unread->pluck('id')->all())->toBe([
+        Messenger::between($me, $b)->id,
+        Messenger::between($me, $a)->id,
+    ]);
+});
+
+it('returns only spam conversations when only_spam is true', function () {
+    $me = User::factory()->create();
+    $a = User::factory()->create();
+    $b = User::factory()->create();
+
+    Messenger::send($me, $a, 'hi a');
+    Messenger::send($me, $b, 'hi b');
+
+    $convA = Messenger::between($me, $a);
+    Messenger::spam($convA, $me);
+
+    $spam = app(GetInboxConversationsQuery::class)->execute($me, ['only_spam' => true]);
+
+    expect($spam)->toHaveCount(1)
+        ->and($spam->first()->id)->toBe($convA->id);
+});
+
+it('only_spam is participant-specific and the inverse of the default inbox', function () {
+    $me = User::factory()->create();
+    $a = User::factory()->create();
+
+    Messenger::send($me, $a, 'hi a');
+    $convA = Messenger::between($me, $a);
+    Messenger::spam($convA, $me);
+
+    // Default inbox still shows spam (kept visible per the v1 spec, #82),
+    // while only_spam isolates the spam folder.
+    $default = app(GetInboxConversationsQuery::class)->execute($me);
+    $spam = app(GetInboxConversationsQuery::class)->execute($me, ['only_spam' => true]);
+
+    expect($default->pluck('id')->all())->toContain($convA->id)
+        ->and($spam->pluck('id')->all())->toBe([$convA->id])
+        // The other participant has not marked it as spam, so their folder is empty.
+        ->and(app(GetInboxConversationsQuery::class)->execute($a, ['only_spam' => true]))
+        ->toHaveCount(0);
+});
+
 it('respects the limit option', function () {
     $me = User::factory()->create();
 

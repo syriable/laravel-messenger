@@ -53,6 +53,11 @@ class Messenger
     /**
      * A participant's inbox, ordered by latest activity.
      *
+     * Options: include_archived (bool), starred (bool), unread (bool),
+     * only_spam (bool), exclude_blocked (bool), exclude_spam (bool),
+     * with_participant_models (bool), limit (?int). unread and only_spam back
+     * the inbox filter dropdown (All / Unread / Starred / Archived / Spam).
+     *
      * @return Collection<int, Conversation>
      */
     public function inbox(MessengerParticipant $participant, array $options = []): Collection
