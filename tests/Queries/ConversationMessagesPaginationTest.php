@@ -60,6 +60,56 @@ it('returns every message before a cursor when no limit is given', function () {
     expect($page->pluck('body')->all())->toBe(['msg 1', 'msg 2', 'msg 3']);
 });
 
+it('returns every message after a cursor when no limit is given', function () {
+    [$conv, $alice, $messages] = buildTimeline(6);
+
+    $page = app(GetConversationMessagesQuery::class)->execute($conv, $alice, [
+        'after_id' => $messages['msg 3']->getKey(),
+    ]);
+
+    expect($page->pluck('body')->all())->toBe(['msg 4', 'msg 5', 'msg 6']);
+});
+
+it('fans out the full unbounded page across a large thread when no limit is given', function () {
+    // Documents the contract: a cursor without a limit returns the *entire*
+    // matching range. Callers paginating a large thread must pass a limit to
+    // bound the page; this guards against a future change silently capping it.
+    [$conv, $alice, $messages] = buildTimeline(50);
+
+    $before = app(GetConversationMessagesQuery::class)->execute($conv, $alice, [
+        'before_id' => $messages['msg 50']->getKey(),
+    ]);
+    $after = app(GetConversationMessagesQuery::class)->execute($conv, $alice, [
+        'after_id' => $messages['msg 1']->getKey(),
+    ]);
+
+    // 49 messages on either side of the cursor, both in chronological order.
+    expect($before)->toHaveCount(49)
+        ->and($before->first()->body)->toBe('msg 1')
+        ->and($before->last()->body)->toBe('msg 49')
+        ->and($after)->toHaveCount(49)
+        ->and($after->first()->body)->toBe('msg 2')
+        ->and($after->last()->body)->toBe('msg 50');
+});
+
+it('clamps a non-positive limit to a single result on a cursor page instead of returning everything', function () {
+    [$conv, $alice, $messages] = buildTimeline(10);
+
+    // A zero/negative limit must never disable the LIMIT clause and leak the
+    // whole unbounded range — it clamps to one, just like the non-cursor path.
+    $before = app(GetConversationMessagesQuery::class)->execute($conv, $alice, [
+        'before_id' => $messages['msg 8']->getKey(),
+        'limit' => 0,
+    ]);
+    $after = app(GetConversationMessagesQuery::class)->execute($conv, $alice, [
+        'after_id' => $messages['msg 3']->getKey(),
+        'limit' => -5,
+    ]);
+
+    expect($before->pluck('body')->all())->toBe(['msg 7'])
+        ->and($after->pluck('body')->all())->toBe(['msg 4']);
+});
+
 it('keysets on (created_at, id) so same-timestamp messages paginate deterministically', function () {
     $alice = User::factory()->create();
     $bob = User::factory()->create();
