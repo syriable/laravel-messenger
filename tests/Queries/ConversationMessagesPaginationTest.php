@@ -165,6 +165,57 @@ it('respects the clear boundary together with a cursor', function () {
     expect($page->pluck('body')->all())->toBe(['post 1', 'post 2', 'post 3']);
 });
 
+it('returns empty when before_id points at a pre-clear message invisible to the viewer', function () {
+    $alice = User::factory()->create();
+    $bob = User::factory()->create();
+
+    $pre = [];
+    foreach (range(1, 3) as $i) {
+        Carbon::setTestNow(now()->copy()->setTime(8, 0)->addSeconds($i));
+        $pre[$i] = Messenger::send($alice, $bob, "pre {$i}");
+    }
+
+    $conv = Messenger::between($alice, $bob);
+    Carbon::setTestNow(now()->copy()->setTime(9, 0));
+    Messenger::clear($conv, $alice);
+
+    // All messages before the cursor are also pre-clear, so the clear filter
+    // leaves nothing; the result is an empty collection, not an exception.
+    $page = app(GetConversationMessagesQuery::class)->execute($conv, $alice, [
+        'before_id' => $pre[3]->getKey(),
+    ]);
+
+    expect($page)->toBeEmpty();
+});
+
+it('returns only post-clear messages when after_id points at a pre-clear message', function () {
+    $alice = User::factory()->create();
+    $bob = User::factory()->create();
+
+    $pre = [];
+    foreach (range(1, 3) as $i) {
+        Carbon::setTestNow(now()->copy()->setTime(8, 0)->addSeconds($i));
+        $pre[$i] = Messenger::send($alice, $bob, "pre {$i}");
+    }
+
+    $conv = Messenger::between($alice, $bob);
+    Carbon::setTestNow(now()->copy()->setTime(9, 0));
+    Messenger::clear($conv, $alice);
+
+    foreach (range(1, 2) as $i) {
+        Carbon::setTestNow(now()->copy()->setTime(10, 0)->addSeconds($i));
+        Messenger::send($bob, $alice, "post {$i}");
+    }
+
+    // The keyset finds messages after pre[1], but the clear filter removes
+    // the remaining pre-clear ones — only the post-clear messages survive.
+    $page = app(GetConversationMessagesQuery::class)->execute($conv, $alice, [
+        'after_id' => $pre[1]->getKey(),
+    ]);
+
+    expect($page->pluck('body')->all())->toBe(['post 1', 'post 2']);
+});
+
 it('rejects a cursor message from another conversation', function () {
     $alice = User::factory()->create();
     $bob = User::factory()->create();

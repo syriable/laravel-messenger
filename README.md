@@ -143,12 +143,17 @@ $latest = Messenger::messages($conversation, $alice, ['limit' => 50]);
 $older  = Messenger::messages($conversation, $alice, ['before_id' => $latest->first()->id, 'limit' => 50]);
 $newer  = Messenger::messages($conversation, $alice, ['after_id' => $latest->last()->id, 'limit' => 50]);
 
+// ⚠ Always pass `limit`. Omitting it loads the **entire** visible history into memory.
+// That is intentional for scripts, but almost never right for HTTP or Livewire endpoints.
+
 // Unread totals (denormalized — no message scanning; archived excluded by default)
 $alice->unreadMessagesCount();               // total unread messages
 $alice->unreadConversationsCount();          // number of conversations with unread
 Messenger::unreadCount($alice);              // total unread messages
 Messenger::unreadConversations($alice);      // number of conversations with unread
 Messenger::unreadCount($alice, includeArchived: true); // include archived threads
+// Note: unread totals include blocked and spam threads by default, consistent with
+// inbox defaults. If your UI hides blocked/spam, filter them in the UI badge too.
 ```
 
 Cursors are **keyset** (not offset) and exclude the cursor message itself, so
@@ -172,7 +177,7 @@ Messenger::block($conversation, $alice);       // mutual; ->unblock(...)
 Messenger::spam($conversation, $alice);        // mutual; ->unspam(...)
 Messenger::clear($conversation, $alice);       // visibility reset, no deletion
 Messenger::markAsRead($conversation, $alice);  // opening a conversation reads it
-Messenger::markAsUnread($conversation, $alice);// marks only the last received message
+Messenger::markAsUnread($conversation, $alice);// sets unread_count to 1 (not the true historical count)
 ```
 
 ### Reporting a message
@@ -252,6 +257,25 @@ Echo.private(`messenger.conversation.${conversationId}`)
     .listen('.message.sent', (e) => console.log(e));
 ```
 
+Private channels require a channel authorization callback in your host application. Without one, Echo subscriptions to private channels will fail with a 403:
+
+```php
+// routes/channels.php (host application)
+use Syriable\Messenger\Models\Conversation;
+
+Broadcast::channel('messenger.conversation.{conversationId}', function ($user, string $conversationId) {
+    $conversation = Conversation::find($conversationId);
+
+    return $conversation
+        && $conversation->participants()
+            ->where('participant_type', $user->getMorphClass())
+            ->where('participant_id', $user->getKey())
+            ->exists();
+});
+```
+
+> If you set `private => false` in the config, messages broadcast on a public channel with no access control — anyone who knows a conversation ID can subscribe. Only use this in trusted internal environments.
+
 The broadcast is a lightweight notification. It carries the message's core fields plus a metadata-only attachment summary — `has_attachments` and an `attachments` array of `{ id, name, mime_type, size }` — so clients can render attachment-only or mixed messages without a follow-up request. It intentionally does **not** include file contents or URLs (those are disk/authorization concerns); load the message (e.g. `Messenger::messages()`) or override `broadcastWith()` if you need more.
 
 ## Customizing the send pipeline
@@ -262,6 +286,7 @@ Messages pass through a composable, configurable pipeline before they are stored
 // config/messenger.php
 'pipeline' => [
     \Syriable\Messenger\Pipelines\Send\EnsureParticipantsAreValid::class,
+    \Syriable\Messenger\Pipelines\Send\EnsureParticipantsExist::class,
     \Syriable\Messenger\Pipelines\Send\EnsureConversationIsNotBlocked::class,
     \Syriable\Messenger\Pipelines\Send\EnsureMessageHasContent::class,
     \Syriable\Messenger\Pipelines\Send\EnsureAttachmentsAreValid::class,
