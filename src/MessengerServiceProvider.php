@@ -2,6 +2,7 @@
 
 namespace Syriable\Messenger;
 
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -29,6 +30,9 @@ class MessengerServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-messenger')
             ->hasConfigFile()
+            ->hasViews('messenger')
+            ->hasTranslations()
+            ->hasAssets()
             ->discoversMigrations()
             ->hasCommand(PruneAttachmentsCommand::class);
     }
@@ -48,6 +52,18 @@ class MessengerServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        // Register the bundled Blade components under the `messenger` namespace
+        // so they resolve as <x-messenger::avatar />, <x-messenger::badge />,
+        // etc. These are framework-agnostic presentation primitives; the
+        // interactive Livewire islands build on top of them.
+        Blade::anonymousComponentNamespace('messenger::components', 'messenger');
+
+        // The broadcast channel authorization is published (not auto-loaded) so
+        // the host controls how participant identity maps onto auth.
+        $this->publishes([
+            __DIR__.'/../routes/channels.php' => base_path('routes/messenger-channels.php'),
+        ], 'messenger-channels');
+
         if (config('messenger.broadcasting.enabled', false)) {
             Event::listen(MessageSent::class, BroadcastMessageSent::class);
         }

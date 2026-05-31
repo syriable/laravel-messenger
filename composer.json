@@ -33,6 +33,11 @@
         "phpstan/phpstan-phpunit": "^2.0",
         "spatie/laravel-ray": "^1.35"
     },
+    "suggest": {
+        "livewire/livewire": "Required for the bundled interactive chat UI (Inbox, Thread, Composer).",
+        "laravel/reverb": "Optional WebSocket server for live messages, typing indicators and presence.",
+        "laravel/echo": "Optional client library for subscribing to the messenger realtime channels."
+    },
     "autoload": {
         "psr-4": {
             "Syriable\\Messenger\\": "src/"

@@ -68,6 +68,39 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | User interface
+    |--------------------------------------------------------------------------
+    |
+    | Presentation settings for the bundled chat UI. These have no effect on the
+    | headless domain; they configure the optional Livewire interface only.
+    | theme: a `--msgr-*` token set ("neutral" | "dark" | a custom set you ship).
+    | message_style: "flat" (email-like rows) or "bubble" (aligned chat bubbles).
+    |
+    */
+    'ui' => [
+        'enabled' => true,
+
+        'route' => [
+            'prefix' => 'messages',
+            'name' => 'messenger.',
+            'middleware' => ['web', 'auth'],
+        ],
+
+        'theme' => 'neutral',
+        'message_style' => 'flat',
+
+        // Messages loaded per infinite-scroll page (keyset pagination).
+        'per_page' => 30,
+
+        // Polling intervals used when realtime broadcasting is unavailable.
+        'polling' => [
+            'inbox' => '15s',
+            'thread' => '5s',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Messages
     |--------------------------------------------------------------------------
     |
