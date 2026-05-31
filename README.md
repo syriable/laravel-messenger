@@ -129,6 +129,10 @@ $conversations = $alice->inbox(['include_archived' => true, 'starred' => true, '
 // single grouped query, so rendering names/avatars is N+1-free (see below).
 $conversations = $alice->inbox(['with_participant_models' => true]);
 
+// Blocked/spam threads stay in the inbox by design (history is preserved); drop
+// them explicitly if your UI hides them.
+$conversations = $alice->inbox(['exclude_blocked' => true, 'exclude_spam' => true]);
+
 // Messages, chronological (newest at the bottom), respecting the viewer's cleared history
 $conversation = Messenger::between($alice, $bob);
 $messages = Messenger::messages($conversation, $alice, ['limit' => 50]);
@@ -248,7 +252,7 @@ Echo.private(`messenger.conversation.${conversationId}`)
     .listen('.message.sent', (e) => console.log(e));
 ```
 
-The broadcast is a lightweight notification — it carries the message's core fields but **not** attachment metadata. Clients render attachment-only or mixed messages by loading the message (e.g. `Messenger::messages()`). To include attachments inline, broadcast a custom event or override `broadcastWith()`.
+The broadcast is a lightweight notification. It carries the message's core fields plus a metadata-only attachment summary — `has_attachments` and an `attachments` array of `{ id, name, mime_type, size }` — so clients can render attachment-only or mixed messages without a follow-up request. It intentionally does **not** include file contents or URLs (those are disk/authorization concerns); load the message (e.g. `Messenger::messages()`) or override `broadcastWith()` if you need more.
 
 ## Customizing the send pipeline
 
@@ -289,6 +293,8 @@ class ProfanityFilter implements SendPipe
 
 The package is **not** responsible for business authorization (no policies, roles or ACL). Your application decides who may message whom. The package only enforces internal messaging constraints: blocked / spam conversations, participant membership and message validity.
 
+**Reads require participation.** Conversation-scoped operations enforce membership: `Messenger::messages($conversation, $viewer)` (and the participant-state actions `archive`, `clear`, `block`, `markAsRead`, …) throw `InvalidParticipantException` when the viewer is not a participant — they do **not** return an empty result. Catch it and map to 403/404. Note that `Messenger::between()` resolves the conversation for any caller who knows the participant pair; only the membership-scoped operations enforce the check.
+
 Consistent with this, **message reporting is unrestricted by default**: `Messenger::report()` accepts a report from any identity against any message and does not require the reporter to be a participant. Set `messenger.reports.participants_only` to `true` to require the reporter to belong to the message's conversation, or gate it in your application.
 
 Two further opt-in guards are available (both **off by default** to preserve the headless contract):
@@ -302,7 +308,7 @@ Because the package is headless and host-owned, a few responsibilities sit with 
 
 - **Attachment access.** `$attachment->url` returns `Storage::disk($disk)->url($path)` with no signing or authorization. If you store attachments on a **public** disk, those URLs are world-readable. Use a private disk and serve files through an authorized controller (or `temporaryUrl()` on a disk that supports it). The package never gates file access for you.
 - **Mass assignment.** Package models use `$guarded = []` and are intended to be written **only** through the package's actions (`Messenger::send()`, `report()`, etc.), never filled directly from request input. Do not do `Message::create($request->all())` or `$participant->update($request->all())` — that would let callers tamper with fields like `unread_count`, `blocked_at` or `sender_id`. Treat the models as internal domain objects.
-- **Blocked / spam conversations stay in the inbox.** Blocking or marking spam prevents *sending* (mutually) but, per the v1 spec, keeps history visible and stored — so these conversations still appear in `Messenger::inbox()`. Each returned `Conversation` exposes the participant's `blocked_at` / `spammed_at` state for your UI to filter or badge as you see fit.
+- **Blocked / spam conversations stay in the inbox.** Blocking or marking spam prevents *sending* (mutually) but, per the v1 spec, keeps history visible and stored — so these conversations still appear in `Messenger::inbox()`. Each returned `Conversation` exposes the participant's `blocked_at` / `spammed_at` state for your UI to badge, or pass `['exclude_blocked' => true, 'exclude_spam' => true]` to drop them from the result entirely.
 - **Deleting participants is host-owned.** The morphable design precludes database foreign keys, so deleting a host participant model does not cascade: their `messenger_participants`, messages, attachments and reports remain, and `morphTo` accessors like `$message->sender` then resolve to `null`. Treat those relations as nullable in your UI. When you delete an account, also remove its messenger rows.
 
 ## Pruning attachment files
@@ -323,6 +329,27 @@ Messenger::pruneAttachments(dryRun: true);  // list only
 ```
 
 Pruning is explicit and opt-in — it never runs automatically — so it is safe against the immutability model.
+
+## Database & concurrency
+
+The send path is built for parallel writes: the lazy first-message race recovers
+by attaching to the winning conversation, block/spam is re-checked under a row
+lock inside the transaction, the unread counter increments atomically in SQL, and
+the write transaction is **retried a bounded number of times on transient
+concurrency errors** (deadlock, lock-wait timeout, SQLite `database is locked`).
+The suite runs on SQLite, **MySQL 8 and PostgreSQL 16** in CI.
+
+SQLite serialises all writers, so under heavy parallel write load it can still
+raise `database is locked` faster than the retries absorb. For production with
+meaningful concurrency, use **MySQL or PostgreSQL**. If you do run SQLite, enable
+WAL and a busy timeout so the driver waits for the lock instead of failing
+immediately:
+
+```php
+// config/database.php — sqlite connection
+'options' => [PDO::ATTR_TIMEOUT => 5], // seconds to wait on a locked database
+// and run once: PRAGMA journal_mode=WAL;
+```
 
 ## Architecture
 

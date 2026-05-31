@@ -75,6 +75,26 @@ return [
     'reports' => [
         'max_reason_length' => 255,
         'max_note_length' => 2000,
+        // When true, only conversation participants may report a message.
+        // Off by default: reporting is unrestricted to preserve the headless
+        // contract — gate it in your application or enable this guard.
+        'participants_only' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validation guards
+    |--------------------------------------------------------------------------
+    |
+    | Opt-in guards enforced by the send pipeline. Off by default to preserve
+    | the headless contract: the host decides who may message whom.
+    |
+    */
+    'validation' => [
+        // When true, the send pipeline rejects a sender/recipient that does not
+        // exist in the database, preventing "ghost" participant rows whose
+        // morphTo accessors would later resolve to null.
+        'verify_participants_exist' => false,
     ],
 
     /*
@@ -87,10 +107,16 @@ return [
     |
     */
     'attachments' => [
+        // Storage disk for attachment files. SECURITY: `$attachment->url` returns
+        // an unsigned Storage::url(). For non-public files use a PRIVATE disk and
+        // serve them through an authorized route (or temporaryUrl()); never point
+        // this at a public disk for sensitive content.
         'disk' => env('MESSENGER_ATTACHMENT_DISK', 'local'),
         'directory' => 'messenger/attachments',
         // Maximum size per attachment, in kilobytes.
         'max_size' => 10240,
+        // Reject empty (zero-byte) uploads. Set true to allow them.
+        'allow_empty' => false,
         // Maximum number of attachments allowed on a single message.
         'max_per_message' => 10,
         // Allowed file extensions. Audio and video are intentionally excluded in v1.

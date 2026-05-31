@@ -17,9 +17,12 @@ use Syriable\Messenger\Support\Models;
  * (participant_type, participant_id) and (last_message_at) indexes.
  *
  * Supported options: include_archived (bool), starred (bool), limit (?int),
- * with_participant_models (bool). The last eager-loads the polymorphic model
- * behind each Participant row (e.g. the User) so the host can render names and
- * avatars without an N+1 (#70).
+ * with_participant_models (bool), exclude_blocked (bool), exclude_spam (bool).
+ * with_participant_models eager-loads the polymorphic model behind each
+ * Participant row (e.g. the User) so the host can render names and avatars
+ * without an N+1 (#70). exclude_blocked / exclude_spam drop conversations the
+ * viewer has blocked or marked as spam (kept visible by default per the v1
+ * spec, #82).
  *
  * @return Collection<int, Conversation>
  */
@@ -32,6 +35,8 @@ class GetInboxConversationsQuery
 
         $includeArchived = (bool) ($options['include_archived'] ?? false);
         $starredOnly = (bool) ($options['starred'] ?? false);
+        $excludeBlocked = (bool) ($options['exclude_blocked'] ?? false);
+        $excludeSpam = (bool) ($options['exclude_spam'] ?? false);
         $withParticipantModels = (bool) ($options['with_participant_models'] ?? false);
         $limit = Limit::normalize($options['limit'] ?? null);
 
@@ -47,6 +52,8 @@ class GetInboxConversationsQuery
             ->where('mp.participant_id', $participant->getKey())
             ->when(! $includeArchived, fn ($query) => $query->whereNull('mp.archived_at'))
             ->when($starredOnly, fn ($query) => $query->whereNotNull('mp.starred_at'))
+            ->when($excludeBlocked, fn ($query) => $query->whereNull('mp.blocked_at'))
+            ->when($excludeSpam, fn ($query) => $query->whereNull('mp.spammed_at'))
             ->where(function ($query) use ($conversations) {
                 // Hide cleared conversations until a newer message arrives.
                 $query->whereNull('mp.cleared_at')

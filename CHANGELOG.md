@@ -6,6 +6,8 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 ### Fixed
 
+- Retry the send write transaction a bounded number of times on transient concurrency errors (deadlock, lock-wait timeout, SQLite `database is locked`), so a contended send into an existing conversation is no longer silently dropped. Combined with the MySQL/PostgreSQL CI, this verifies that concurrent sends don't lose messages on production drivers; SQLite remains single-writer and should use WAL + a busy timeout, or be swapped for MySQL/PostgreSQL under heavy parallel writes (#76).
+- Include every documented option in the published config stub — `validation.verify_participants_exist`, `reports.participants_only` and `attachments.allow_empty` were read with defaults but missing from `config/messenger.php`, so `vendor:publish` now produces a complete reference (#77).
 - Store messaging timestamps with microsecond precision (`timestamp(6)` columns + a `HasPreciseTimestamps` model trait) and compare clear/reply/inbox visibility boundaries at microsecond resolution, so a message sent in the same wall-clock second as a clear is no longer wrongly hidden (#63, #67).
 - Widen the `body` column to `mediumText` so a message at the configured `max_body_length` always persists losslessly on MySQL/MariaDB, even with multibyte characters (#47).
 - `markAsUnread` is now a no-op when the participant has no visible received message (sender-only or cleared history), so the unread badge can never contradict the visible timeline (#50); it continues to mark a single message (#56).
@@ -17,6 +19,8 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 ### Added
 
+- `exclude_blocked` / `exclude_spam` inbox options to drop conversations the viewer has blocked or marked as spam (kept visible by default per the v1 spec) (#82).
+- A metadata-only attachment summary (`has_attachments` + an `attachments` array of `{ id, name, mime_type, size }`) in the `MessageSentBroadcast` payload, so realtime clients can render attachment-only / mixed messages without a follow-up request. No file contents or URLs are broadcast (#81).
 - Keyset cursor pagination on `Messenger::messages()` via the mutually-exclusive `before_id` / `after_id` options, so large conversations can load a page at a time (scroll-up / load-newer) instead of hydrating the entire history. Cursors compare on the `(created_at, id)` tuple, exclude the cursor message, and always return chronological order (#71).
 - `with_participant_models` inbox option to eager-load the polymorphic model behind each participant (e.g. the `User`) in one grouped query, eliminating the host-side N+1 when rendering inbox names/avatars (#70).
 - Run the test suite against MySQL 8 and PostgreSQL 16 in CI through a driver-agnostic test harness (`DB_CONNECTION`), so the atomic-increment, `lockForUpdate` and unique-constraint concurrency paths are verified on real databases, not only SQLite (#69).
@@ -34,6 +38,11 @@ All notable changes to `laravel-messenger` will be documented in this file.
 - Recommend an explicit named-route redirect over `back()` for send-failure handling, since `back()` silently drops the error when no `Referer` header is present (API/Inertia/Livewire) (#74).
 - Note that duplicate-submission idempotency is a host responsibility — the package has no de-duplication guard by design (#73).
 - Recommend registering a `Relation::morphMap()` before the first migration so participant identity stays portable across class renames, with a warning about orphaned `participant_type` rows otherwise (#72).
+- Add a "Database & concurrency" README section documenting the send path's parallel-write guarantees and the bounded concurrency retry, and recommending MySQL/PostgreSQL (or SQLite WAL + busy timeout) for heavy write load (#76).
+- Document that conversation-scoped reads (`Messenger::messages()`) and participant-state actions throw `InvalidParticipantException` for non-participants rather than returning empty (#78).
+- Stress in the README and the published config that ghost (non-existent) participants are the host's responsibility unless `validation.verify_participants_exist` is enabled (#79).
+- Add a security comment on `attachments.disk` in the published config warning that `$attachment->url` is unsigned and that sensitive files need a private disk + authorized route or `temporaryUrl()` (#80).
+- Document that duplicate-submission idempotency is a host responsibility — no de-duplication guard by design (#73, #83).
 - Document the reply-target validity/visibility constraint near the README `reply_to` example (#59); the lack of cascading deletes and host-owned participant cleanup with nullable `morphTo` accessors (#48, #49); the single-message `markAsUnread` semantic; and the attachment metadata-validation limitation (#51).
 
 ### Fixed (earlier)

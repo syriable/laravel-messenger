@@ -49,6 +49,12 @@ class MessageSentBroadcast implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
+        // A lightweight attachment summary (metadata only — no file contents or
+        // URLs) so clients can render attachment-only / mixed messages from the
+        // broadcast without a follow-up request. loadMissing covers the queued
+        // case where SerializesModels rehydrates the message without relations.
+        $attachments = $this->message->loadMissing('attachments')->attachments;
+
         return [
             'id' => $this->message->getKey(),
             'conversation_id' => $this->message->conversation_id,
@@ -57,6 +63,13 @@ class MessageSentBroadcast implements ShouldBroadcast
             'body' => $this->message->body,
             'reply_to_id' => $this->message->reply_to_id,
             'created_at' => optional($this->message->created_at)->toIso8601String(),
+            'has_attachments' => $attachments->isNotEmpty(),
+            'attachments' => $attachments->map(fn ($attachment) => [
+                'id' => $attachment->getKey(),
+                'name' => $attachment->name,
+                'mime_type' => $attachment->mime_type,
+                'size' => $attachment->size,
+            ])->values()->all(),
         ];
     }
 }
