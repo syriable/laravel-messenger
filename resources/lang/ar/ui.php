@@ -12,8 +12,11 @@ return [
     'search' => 'البحث في الرسائل',
     'search_placeholder' => 'بحث…',
     'you_prefix' => 'أنت:',
+    'you' => 'أنت',
     'no_messages_yet' => 'لا توجد رسائل بعد',
     'unknown_participant' => 'غير معروف',
+    'load_earlier' => 'تحميل الرسائل الأقدم',
+    'attachment' => 'مرفق',
 
     'filter' => [
         'label' => 'تصفية المحادثات',

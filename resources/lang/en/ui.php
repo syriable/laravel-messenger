@@ -13,8 +13,11 @@ return [
     'search' => 'Search messages',
     'search_placeholder' => 'Search…',
     'you_prefix' => 'You:',
+    'you' => 'You',
     'no_messages_yet' => 'No messages yet',
     'unknown_participant' => 'Unknown',
+    'load_earlier' => 'Load earlier messages',
+    'attachment' => 'Attachment',
 
     'filter' => [
         'label' => 'Filter conversations',

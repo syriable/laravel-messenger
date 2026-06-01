@@ -389,6 +389,114 @@
     color: var(--msgr-text-muted);
 }
 
+/* ----------------------------------------------------------------- thread */
+
+.msgr-thread__inner {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+}
+
+.msgr-thread__header {
+    display: flex;
+    align-items: center;
+    gap: var(--msgr-space-3);
+    padding: var(--msgr-space-3) var(--msgr-space-4);
+    border-block-end: 1px solid var(--msgr-border);
+}
+
+.msgr-thread__identity {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.msgr-thread__name {
+    font-weight: 600;
+    font-size: var(--msgr-text-name);
+}
+
+.msgr-thread__handle {
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-thread__messages {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: var(--msgr-space-4);
+}
+
+.msgr-thread__more {
+    display: flex;
+    justify-content: center;
+    padding-block-end: var(--msgr-space-3);
+}
+
+.msgr-thread__more button {
+    border: 1px solid var(--msgr-border);
+    background: var(--msgr-surface);
+    color: var(--msgr-text-muted);
+    border-radius: var(--msgr-radius-round);
+    padding: var(--msgr-space-1) var(--msgr-space-4);
+    font-size: var(--msgr-text-meta);
+    cursor: pointer;
+}
+
+.msgr-message__main {
+    min-inline-size: 0;
+    flex: 1 1 auto;
+}
+
+.msgr-message__meta {
+    display: flex;
+    align-items: baseline;
+    gap: var(--msgr-space-2);
+}
+
+.msgr-message__sender {
+    font-weight: 600;
+}
+
+.msgr-message__reply {
+    margin-block: var(--msgr-space-1);
+    padding: var(--msgr-space-1) var(--msgr-space-2);
+    border-inline-start: 3px solid var(--msgr-border);
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-message__body {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.msgr-message__attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--msgr-space-2);
+    margin-block-start: var(--msgr-space-2);
+}
+
+.msgr-attach__img {
+    max-inline-size: 220px;
+    max-block-size: 220px;
+    border-radius: var(--msgr-radius);
+    object-fit: cover;
+}
+
+.msgr-attach__file {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--msgr-space-1);
+    padding: var(--msgr-space-2) var(--msgr-space-3);
+    border: 1px solid var(--msgr-border);
+    border-radius: var(--msgr-radius);
+    color: var(--msgr-link);
+    text-decoration: none;
+    font-size: var(--msgr-text-meta);
+}
+
 /* ----------------------------------------------------------- message rows */
 
 .msgr-message {
