@@ -4,6 +4,7 @@ use Livewire\Livewire;
 use Syriable\Messenger\Facades\Messenger;
 use Syriable\Messenger\Livewire\Thread;
 use Syriable\Messenger\Tests\Models\User;
+use Syriable\Messenger\Tests\Support\FakeOnlinePresenceResolver;
 
 /**
  * The Thread island (Epic E4): renders a conversation's visible messages,

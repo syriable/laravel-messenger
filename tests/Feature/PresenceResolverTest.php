@@ -1,10 +1,9 @@
 <?php
 
-use Carbon\CarbonInterface;
-use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Contracts\PresenceResolver;
 use Syriable\Messenger\Support\NullPresenceResolver;
 use Syriable\Messenger\Tests\Models\User;
+use Syriable\Messenger\Tests\Support\FakeOnlinePresenceResolver;
 
 /**
  * Presence is a transport concern resolved through a swappable contract (E6 /
@@ -30,16 +29,3 @@ it('honours a custom presence resolver bound via config', function () {
     expect($resolver)->toBeInstanceOf(FakeOnlinePresenceResolver::class)
         ->and($resolver->status(User::factory()->create()))->toBe('online');
 });
-
-class FakeOnlinePresenceResolver implements PresenceResolver
-{
-    public function status(MessengerParticipant $participant): string
-    {
-        return 'online';
-    }
-
-    public function lastSeenAt(MessengerParticipant $participant): ?CarbonInterface
-    {
-        return now();
-    }
-}
