@@ -1,4 +1,16 @@
 includes:
+    # Load the PHPStan dev extensions explicitly rather than relying on the
+    # phpstan/extension-installer Composer plugin. That plugin is silently
+    # skipped whenever Composer runs with plugins disabled — most notably as
+    # root without COMPOSER_ALLOW_SUPERUSER=1 (bare Docker images, some CI
+    # runners, devcontainers) — which left Larastan unregistered and aborted
+    # analysis with "Unexpected item 'parameters › configDirectories'" before
+    # a single file was checked. Wiring the neon files here makes static
+    # analysis environment-independent (#94).
+    - vendor/larastan/larastan/extension.neon
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+    - vendor/phpstan/phpstan-phpunit/rules.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
     - phpstan-baseline.neon
 
 parameters:

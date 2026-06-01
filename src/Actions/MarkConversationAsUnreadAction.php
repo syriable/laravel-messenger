@@ -30,10 +30,14 @@ class MarkConversationAsUnreadAction
             return $row;
         }
 
-        $row->forceFill([
+        // Route the counter write through the same locked reset as markAsRead /
+        // clear so it is serialised against a concurrent inbound increment in
+        // SendMessageAction::updateProjections(); a bare save() here could let
+        // an increment that lands between load and write be overwritten (#93).
+        $row = $this->applyLockedReset($row, [
             'unread_count' => 1,
             'last_read_at' => null,
-        ])->save();
+        ]);
 
         ConversationMarkedAsUnread::dispatch($row);
 

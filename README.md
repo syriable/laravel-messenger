@@ -134,6 +134,11 @@ $conversations = $alice->inbox(['with_participant_models' => true]);
 $conversations = $alice->inbox(['exclude_blocked' => true, 'exclude_spam' => true]);
 
 // Messages, chronological (newest at the bottom), respecting the viewer's cleared history
+// ⚠ between() is intentionally UNSCOPED: it resolves the conversation for any
+// caller who knows the participant pair and does NOT enforce membership (unlike
+// messages()/archive()/block()/… which throw InvalidParticipantException). If
+// you derive the pair from request input, verify the current actor is one of the
+// two participants before exposing the result. See "Authorization" below.
 $conversation = Messenger::between($alice, $bob);
 $messages = Messenger::messages($conversation, $alice, ['limit' => 50]);
 
@@ -318,7 +323,9 @@ class ProfanityFilter implements SendPipe
 
 The package is **not** responsible for business authorization (no policies, roles or ACL). Your application decides who may message whom. The package only enforces internal messaging constraints: blocked / spam conversations, participant membership and message validity.
 
-**Reads require participation.** Conversation-scoped operations enforce membership: `Messenger::messages($conversation, $viewer)` (and the participant-state actions `archive`, `clear`, `block`, `markAsRead`, …) throw `InvalidParticipantException` when the viewer is not a participant — they do **not** return an empty result. Catch it and map to 403/404. Note that `Messenger::between()` resolves the conversation for any caller who knows the participant pair; only the membership-scoped operations enforce the check.
+**Reads require participation.** Conversation-scoped operations enforce membership: `Messenger::messages($conversation, $viewer)` (and the participant-state actions `archive`, `clear`, `block`, `markAsRead`, …) throw `InvalidParticipantException` when the viewer is not a participant — they do **not** return an empty result. Catch it and map to 403/404.
+
+**`between()` is the deliberate exception — it is unscoped.** `Messenger::between($a, $b)` is a pure key lookup that resolves the conversation for *any* caller who knows the participant pair; it performs **no** membership check (it is the building block the send path and your authorization layer compose on top of). Because every other conversation entry point gates access, do not treat a `between()` result as access-controlled: if the pair comes from request input, confirm the current actor is one of the two participants before rendering or acting on it.
 
 Consistent with this, **message reporting is unrestricted by default**: `Messenger::report()` accepts a report from any identity against any message and does not require the reporter to be a participant. Set `messenger.reports.participants_only` to `true` to require the reporter to belong to the message's conversation, or gate it in your application.
 
