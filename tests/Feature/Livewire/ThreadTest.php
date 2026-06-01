@@ -122,6 +122,48 @@ it('appends new messages on the message-sent event', function () {
         ->assertSee('second');
 });
 
+it('shows the other participant presence in the header', function () {
+    config()->set('messenger.ui.presence_resolver', FakeOnlinePresenceResolver::class);
+
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    Messenger::send($alice, $me, 'hi');
+    $conversation = Messenger::between($me, $alice);
+
+    Livewire::actingAs($me)
+        ->test(Thread::class, ['conversationId' => $conversation->id])
+        ->assertSee(__('messenger::ui.presence.online'));
+});
+
+it('shows and clears a typing indicator', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    Messenger::send($alice, $me, 'hi');
+    $conversation = Messenger::between($me, $alice);
+
+    Livewire::actingAs($me)
+        ->test(Thread::class, ['conversationId' => $conversation->id])
+        ->call('showTyping', 'Alice')
+        ->assertSee(__('messenger::ui.typing', ['name' => 'Alice']))
+        ->call('clearTyping')
+        ->assertSet('typingName', null);
+});
+
+it('polls for new messages when realtime is unavailable', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    Messenger::send($alice, $me, 'first');
+    $conversation = Messenger::between($me, $alice);
+
+    $component = Livewire::actingAs($me)
+        ->test(Thread::class, ['conversationId' => $conversation->id])
+        ->assertDontSee('second');
+
+    Messenger::send($alice, $me, 'second');
+
+    $component->call('poll')->assertSee('second');
+});
+
 it('renders attachments and reply previews', function () {
     $me = User::factory()->create(['name' => 'Me']);
     $alice = User::factory()->create(['name' => 'Alice']);

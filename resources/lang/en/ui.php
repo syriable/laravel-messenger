@@ -18,6 +18,8 @@ return [
     'unknown_participant' => 'Unknown',
     'load_earlier' => 'Load earlier messages',
     'attachment' => 'Attachment',
+    'last_seen' => 'Last seen :time',
+    'typing' => ':name is typing…',
 
     'composer' => [
         'placeholder' => 'Type a message…',

@@ -17,6 +17,8 @@ return [
     'unknown_participant' => 'غير معروف',
     'load_earlier' => 'تحميل الرسائل الأقدم',
     'attachment' => 'مرفق',
+    'last_seen' => 'آخر ظهور :time',
+    'typing' => ':name يكتب الآن…',
 
     'composer' => [
         'placeholder' => 'اكتب رسالة…',

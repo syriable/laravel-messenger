@@ -83,6 +83,7 @@ it('keeps the domain events that listeners and broadcasts depend on', function (
     'Syriable\Messenger\Events\ConversationCleared',
     'Syriable\Messenger\Events\MessageReported',
     'Syriable\Messenger\Events\Broadcast\MessageSentBroadcast',
+    'Syriable\Messenger\Events\Broadcast\ConversationReadBroadcast',
 ]);
 
 it('keeps the participant and pipe contracts stable', function () {

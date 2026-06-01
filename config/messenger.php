@@ -13,6 +13,7 @@ use Syriable\Messenger\Pipelines\Send\EnsureParticipantsExist;
 use Syriable\Messenger\Pipelines\Send\EnsureReplyIsValid;
 use Syriable\Messenger\Support\AuthParticipantResolver;
 use Syriable\Messenger\Support\DefaultParticipantPresenter;
+use Syriable\Messenger\Support\NullPresenceResolver;
 
 // Configuration for syriable/laravel-messenger.
 return [
@@ -87,6 +88,11 @@ return [
         // Resolves the participant whose inbox is shown. Swap for impersonation,
         // multi-guard or tenant-scoped contexts.
         'participant_resolver' => AuthParticipantResolver::class,
+
+        // Resolves participant presence ("online" / "last seen"). The default
+        // reports everyone offline; bind a presence-channel- or heartbeat-backed
+        // resolver to light up the online dots.
+        'presence_resolver' => NullPresenceResolver::class,
 
         'route' => [
             'prefix' => 'messages',

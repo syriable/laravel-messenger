@@ -10,13 +10,17 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Syriable\Messenger\Commands\PruneAttachmentsCommand;
 use Syriable\Messenger\Contracts\CurrentParticipantResolver;
 use Syriable\Messenger\Contracts\ParticipantPresenter;
+use Syriable\Messenger\Contracts\PresenceResolver;
+use Syriable\Messenger\Events\ConversationRead;
 use Syriable\Messenger\Events\MessageSent;
+use Syriable\Messenger\Listeners\BroadcastConversationRead;
 use Syriable\Messenger\Listeners\BroadcastMessageSent;
 use Syriable\Messenger\Livewire\Composer;
 use Syriable\Messenger\Livewire\Sidebar;
 use Syriable\Messenger\Livewire\Thread;
 use Syriable\Messenger\Support\AuthParticipantResolver;
 use Syriable\Messenger\Support\DefaultParticipantPresenter;
+use Syriable\Messenger\Support\NullPresenceResolver;
 
 class MessengerServiceProvider extends PackageServiceProvider
 {
@@ -61,6 +65,13 @@ class MessengerServiceProvider extends PackageServiceProvider
         $this->app->bind(CurrentParticipantResolver::class, function ($app) {
             return $app->make($app['config']->get('messenger.ui.participant_resolver', AuthParticipantResolver::class));
         });
+
+        // Resolves participant presence ("online" / "last seen") for the UI.
+        // Defaults to everyone-offline; hosts bind a presence-channel- or
+        // heartbeat-backed resolver via messenger.ui.presence_resolver.
+        $this->app->bind(PresenceResolver::class, function ($app) {
+            return $app->make($app['config']->get('messenger.ui.presence_resolver', NullPresenceResolver::class));
+        });
     }
 
     public function packageBooted(): void
@@ -91,6 +102,7 @@ class MessengerServiceProvider extends PackageServiceProvider
 
         if (config('messenger.broadcasting.enabled', false)) {
             Event::listen(MessageSent::class, BroadcastMessageSent::class);
+            Event::listen(ConversationRead::class, BroadcastConversationRead::class);
         }
     }
 }

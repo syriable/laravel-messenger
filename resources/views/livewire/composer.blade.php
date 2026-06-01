@@ -32,6 +32,11 @@
                     maxlength="{{ $maxLength }}"
                     placeholder="{{ __('messenger::ui.composer.placeholder') }}"
                     aria-label="{{ __('messenger::ui.composer.placeholder') }}"
+                    @if (config('messenger.broadcasting.enabled'))
+                        @php $channel = config('messenger.broadcasting.channel_prefix', 'messenger').'.conversation.'.$conversationId; @endphp
+                        x-data
+                        x-on:input.throttle.2000ms="window.Echo && window.Echo.{{ config('messenger.broadcasting.private', true) ? 'private' : 'channel' }}(@js($channel)).whisper('typing', {})"
+                    @endif
                 ></textarea>
 
                 <label class="msgr-composer__attach" title="{{ __('messenger::ui.composer.attach') }}">

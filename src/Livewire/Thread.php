@@ -9,6 +9,7 @@ use Livewire\Component;
 use Syriable\Messenger\Contracts\CurrentParticipantResolver;
 use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Contracts\ParticipantPresenter;
+use Syriable\Messenger\Contracts\PresenceResolver;
 use Syriable\Messenger\Facades\Messenger;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
@@ -34,6 +35,9 @@ class Thread extends Component
     public bool $hasMoreOlder = false;
 
     public int $perPage = 30;
+
+    /** The other participant's display name while they are typing (ephemeral). */
+    public ?string $typingName = null;
 
     public function mount(?string $conversationId = null): void
     {
@@ -147,12 +151,40 @@ class Thread extends Component
         $otherModel = $conversation->otherParticipantFor($me)?->participant;
         $other = $otherModel instanceof MessengerParticipant ? $otherModel : null;
         $presenter = app(ParticipantPresenter::class);
+        $presence = app(PresenceResolver::class);
 
         return [
             'name' => $other ? $presenter->displayName($other) : __('messenger::ui.unknown_participant'),
             'avatar' => $other ? $presenter->avatarUrl($other) : null,
             'handle' => $other ? $presenter->handle($other) : null,
+            'status' => $other ? $presence->status($other) : 'offline',
+            'last_seen' => $other ? optional($presence->lastSeenAt($other))->diffForHumans() : null,
         ];
+    }
+
+    /**
+     * Show / clear the other participant's typing indicator. Driven by an
+     * ephemeral realtime whisper (no persistence); a no-op fallback otherwise.
+     */
+    public function showTyping(?string $name = null): void
+    {
+        $this->typingName = $name ?: ($this->header['name'] ?? null);
+    }
+
+    public function clearTyping(): void
+    {
+        $this->typingName = null;
+    }
+
+    /**
+     * Polling entry point used when realtime broadcasting is unavailable; pulls
+     * any messages newer than the last loaded one.
+     */
+    public function poll(): void
+    {
+        if ($this->conversationId !== null) {
+            $this->appendNew($this->conversationId);
+        }
     }
 
     /**

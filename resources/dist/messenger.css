@@ -416,9 +416,17 @@
     font-size: var(--msgr-text-name);
 }
 
-.msgr-thread__handle {
+.msgr-thread__handle,
+.msgr-thread__status {
     color: var(--msgr-text-muted);
     font-size: var(--msgr-text-meta);
+}
+
+.msgr-thread__typing {
+    padding: 0 var(--msgr-space-4) var(--msgr-space-2);
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+    font-style: italic;
 }
 
 .msgr-thread__messages {
