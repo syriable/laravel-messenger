@@ -122,6 +122,31 @@ it('increments the recipient unread_count per received message while sender stay
         ->and($conversation->participantFor($alice)->unread_count)->toBe(0);
 });
 
+it('marks as unread through the locked reset so a concurrent inbound increment is not lost', function () {
+    // Regression for #93: markAsUnread must route its counter write through the
+    // same locked transaction as markAsRead/clear. An inbound message that has
+    // already committed its atomic increment must remain observable — the reset
+    // re-selects the row under lockForUpdate rather than overwriting a stale
+    // in-memory copy with a bare save().
+    $alice = User::factory()->create();
+    $bob = User::factory()->create();
+
+    Messenger::send($alice, $bob, 'one');
+    $conversation = Messenger::between($alice, $bob);
+    Messenger::markAsRead($conversation, $bob);
+
+    // A fresh inbound message commits its increment between read and unread.
+    Messenger::send($alice, $bob, 'two');
+
+    $row = Messenger::markAsUnread($conversation, $bob);
+
+    // The reset re-reads under the lock and sets the single-unread marker; the
+    // persisted value matches the in-memory result (no stale overwrite).
+    expect($row->unread_count)->toBe(1)
+        ->and($row->last_read_at)->toBeNull()
+        ->and(Messenger::between($alice, $bob)->participantFor($bob)->unread_count)->toBe(1);
+});
+
 it('resets the sender unread_count to zero when they reply', function () {
     $alice = User::factory()->create();
     $bob = User::factory()->create();
