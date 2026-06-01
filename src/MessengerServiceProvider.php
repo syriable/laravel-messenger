@@ -4,6 +4,7 @@ namespace Syriable\Messenger;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -16,6 +17,7 @@ use Syriable\Messenger\Events\MessageSent;
 use Syriable\Messenger\Listeners\BroadcastConversationRead;
 use Syriable\Messenger\Listeners\BroadcastMessageSent;
 use Syriable\Messenger\Livewire\Composer;
+use Syriable\Messenger\Livewire\Messenger as MessengerComponent;
 use Syriable\Messenger\Livewire\Sidebar;
 use Syriable\Messenger\Livewire\Thread;
 use Syriable\Messenger\Support\AuthParticipantResolver;
@@ -94,15 +96,38 @@ class MessengerServiceProvider extends PackageServiceProvider
         // regardless of provider order.
         if (class_exists(Livewire::class)) {
             $this->app->booted(function () {
+                Livewire::component('messenger', MessengerComponent::class);
                 Livewire::component('messenger.sidebar', Sidebar::class);
                 Livewire::component('messenger.thread', Thread::class);
                 Livewire::component('messenger.composer', Composer::class);
             });
+
+            $this->registerUiRoute();
         }
 
         if (config('messenger.broadcasting.enabled', false)) {
             Event::listen(MessageSent::class, BroadcastMessageSent::class);
             Event::listen(ConversationRead::class, BroadcastConversationRead::class);
         }
+    }
+
+    /**
+     * Register the optional full-page messenger route. Hosts that prefer to
+     * mount <livewire:messenger /> in their own layout can disable this with
+     * `messenger.ui.enabled = false` and route it themselves.
+     */
+    protected function registerUiRoute(): void
+    {
+        if (! config('messenger.ui.enabled', true)) {
+            return;
+        }
+
+        $route = config('messenger.ui.route', []);
+
+        Route::middleware($route['middleware'] ?? ['web'])
+            ->group(function () use ($route) {
+                Route::get($route['prefix'] ?? 'messages', MessengerComponent::class)
+                    ->name(($route['name'] ?? 'messenger.').'index');
+            });
     }
 }

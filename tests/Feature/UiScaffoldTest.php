@@ -11,7 +11,7 @@ use Syriable\Messenger\MessengerServiceProvider;
  * headless domain.
  */
 it('registers the messenger view namespace and shell', function () {
-    expect(view()->exists('messenger::shell'))->toBeTrue()
+    expect(view()->exists('messenger::components.shell'))->toBeTrue()
         ->and(view()->exists('messenger::components.avatar'))->toBeTrue()
         ->and(view()->exists('messenger::components.badge'))->toBeTrue();
 });
