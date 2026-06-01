@@ -12,6 +12,7 @@ use Syriable\Messenger\Contracts\CurrentParticipantResolver;
 use Syriable\Messenger\Contracts\ParticipantPresenter;
 use Syriable\Messenger\Events\MessageSent;
 use Syriable\Messenger\Listeners\BroadcastMessageSent;
+use Syriable\Messenger\Livewire\Composer;
 use Syriable\Messenger\Livewire\Sidebar;
 use Syriable\Messenger\Livewire\Thread;
 use Syriable\Messenger\Support\AuthParticipantResolver;
@@ -84,6 +85,7 @@ class MessengerServiceProvider extends PackageServiceProvider
             $this->app->booted(function () {
                 Livewire::component('messenger.sidebar', Sidebar::class);
                 Livewire::component('messenger.thread', Thread::class);
+                Livewire::component('messenger.composer', Composer::class);
             });
         }
 

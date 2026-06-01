@@ -19,6 +19,17 @@ return [
     'load_earlier' => 'Load earlier messages',
     'attachment' => 'Attachment',
 
+    'composer' => [
+        'placeholder' => 'Type a message…',
+        'send' => 'Send',
+        'attach' => 'Attach a file',
+        'remove_attachment' => 'Remove attachment',
+        'empty' => 'Write a message or attach a file.',
+        'locked' => 'You can no longer send messages in this conversation.',
+        'replying' => 'Replying to a message',
+        'cancel_reply' => 'Cancel reply',
+    ],
+
     'filter' => [
         'label' => 'Filter conversations',
         'all' => 'All',

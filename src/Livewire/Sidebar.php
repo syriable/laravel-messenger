@@ -5,6 +5,7 @@ namespace Syriable\Messenger\Livewire;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Syriable\Messenger\Contracts\CurrentParticipantResolver;
@@ -47,6 +48,15 @@ class Sidebar extends Component
 
         $this->dispatch('conversation-selected', conversationId: $conversationId);
     }
+
+    /**
+     * Re-render the list (recomputing the inbox) when activity changes elsewhere
+     * — a sent message or a read receipt. The computed `rows` is rebuilt on the
+     * resulting request, so ordering, snippets and unread badges stay fresh.
+     */
+    #[On('message-sent')]
+    #[On('conversation-read')]
+    public function refresh(): void {}
 
     /**
      * The rendered conversation rows, newest activity first.

@@ -104,6 +104,24 @@ it('shows the empty state with no conversation selected', function () {
         ->assertSee(__('messenger::ui.empty.inbox_title'));
 });
 
+it('appends new messages on the message-sent event', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    Messenger::send($alice, $me, 'first');
+    $conversation = Messenger::between($me, $alice);
+
+    $component = Livewire::actingAs($me)
+        ->test(Thread::class, ['conversationId' => $conversation->id])
+        ->assertSee('first')
+        ->assertDontSee('second');
+
+    Messenger::send($alice, $me, 'second');
+
+    $component->dispatch('message-sent', conversationId: $conversation->id)
+        ->assertSee('first')
+        ->assertSee('second');
+});
+
 it('renders attachments and reply previews', function () {
     $me = User::factory()->create(['name' => 'Me']);
     $alice = User::factory()->create(['name' => 'Alice']);

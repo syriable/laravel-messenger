@@ -59,13 +59,51 @@ class Thread extends Component
         }
 
         $this->conversationId = $conversation->id;
-
-        $page = Messenger::messages($conversation, $me, ['limit' => $this->perPage]);
-        $this->hasMoreOlder = $page->count() === $this->perPage;
-        $this->messages = $page->map(fn (Message $message) => $this->toViewModel($message, $me))->all();
+        $this->loadLatest($conversation, $me);
 
         Messenger::markAsRead($conversation, $me);
         $this->dispatch('conversation-read', conversationId: $conversation->id);
+    }
+
+    /**
+     * Append messages newer than the last loaded one (after a send or, later, a
+     * realtime event), keeping scroll position. Reloads the latest page when the
+     * thread is empty.
+     */
+    #[On('message-sent')]
+    public function appendNew(?string $conversationId = null): void
+    {
+        if ($this->conversationId === null || $conversationId !== $this->conversationId) {
+            return;
+        }
+
+        $me = $this->participant();
+        $conversation = $this->resolveConversation($this->conversationId, $me);
+
+        if (! $conversation || ! $me) {
+            return;
+        }
+
+        if ($this->messages === []) {
+            $this->loadLatest($conversation, $me);
+        } else {
+            $new = Messenger::messages($conversation, $me, [
+                'after_id' => $this->messages[array_key_last($this->messages)]['id'],
+            ]);
+            $this->messages = array_merge(
+                $this->messages,
+                $new->map(fn (Message $message) => $this->toViewModel($message, $me))->all(),
+            );
+        }
+
+        Messenger::markAsRead($conversation, $me);
+    }
+
+    protected function loadLatest(Conversation $conversation, MessengerParticipant $me): void
+    {
+        $page = Messenger::messages($conversation, $me, ['limit' => $this->perPage]);
+        $this->hasMoreOlder = $page->count() === $this->perPage;
+        $this->messages = $page->map(fn (Message $message) => $this->toViewModel($message, $me))->all();
     }
 
     public function loadOlder(): void
