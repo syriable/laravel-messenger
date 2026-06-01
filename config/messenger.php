@@ -11,6 +11,7 @@ use Syriable\Messenger\Pipelines\Send\EnsureMessageHasContent;
 use Syriable\Messenger\Pipelines\Send\EnsureParticipantsAreValid;
 use Syriable\Messenger\Pipelines\Send\EnsureParticipantsExist;
 use Syriable\Messenger\Pipelines\Send\EnsureReplyIsValid;
+use Syriable\Messenger\Support\AuthParticipantResolver;
 use Syriable\Messenger\Support\DefaultParticipantPresenter;
 
 // Configuration for syriable/laravel-messenger.
@@ -79,6 +80,13 @@ return [
     */
     'ui' => [
         'enabled' => true,
+
+        // The auth guard the default participant resolver reads (null = default).
+        'guard' => null,
+
+        // Resolves the participant whose inbox is shown. Swap for impersonation,
+        // multi-guard or tenant-scoped contexts.
+        'participant_resolver' => AuthParticipantResolver::class,
 
         'route' => [
             'prefix' => 'messages',

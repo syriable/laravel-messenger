@@ -4,12 +4,16 @@ namespace Syriable\Messenger;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Syriable\Messenger\Commands\PruneAttachmentsCommand;
+use Syriable\Messenger\Contracts\CurrentParticipantResolver;
 use Syriable\Messenger\Contracts\ParticipantPresenter;
 use Syriable\Messenger\Events\MessageSent;
 use Syriable\Messenger\Listeners\BroadcastMessageSent;
+use Syriable\Messenger\Livewire\Sidebar;
+use Syriable\Messenger\Support\AuthParticipantResolver;
 use Syriable\Messenger\Support\DefaultParticipantPresenter;
 
 class MessengerServiceProvider extends PackageServiceProvider
@@ -48,6 +52,13 @@ class MessengerServiceProvider extends PackageServiceProvider
         $this->app->bind(ParticipantPresenter::class, function ($app) {
             return $app->make($app['config']->get('messenger.presenter', DefaultParticipantPresenter::class));
         });
+
+        // Resolves "who am I" for the UI. Defaults to the authenticated user
+        // when it is a participant; hosts bind their own for impersonation,
+        // multi-guard or tenant contexts.
+        $this->app->bind(CurrentParticipantResolver::class, function ($app) {
+            return $app->make($app['config']->get('messenger.ui.participant_resolver', AuthParticipantResolver::class));
+        });
     }
 
     public function packageBooted(): void
@@ -63,6 +74,16 @@ class MessengerServiceProvider extends PackageServiceProvider
         $this->publishes([
             __DIR__.'/../routes/channels.php' => base_path('routes/messenger-channels.php'),
         ], 'messenger-channels');
+
+        // Register the interactive Livewire components only when Livewire is
+        // installed, so the headless domain has no hard dependency on it. Defer
+        // to the "booted" callback so Livewire's own provider has registered
+        // regardless of provider order.
+        if (class_exists(Livewire::class)) {
+            $this->app->booted(function () {
+                Livewire::component('messenger.sidebar', Sidebar::class);
+            });
+        }
 
         if (config('messenger.broadcasting.enabled', false)) {
             Event::listen(MessageSent::class, BroadcastMessageSent::class);

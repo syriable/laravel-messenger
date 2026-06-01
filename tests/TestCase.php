@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Syriable\Messenger\MessengerServiceProvider;
 
@@ -24,13 +25,22 @@ class TestCase extends Orchestra
 
     protected function getPackageProviders($app)
     {
-        return [
+        return array_filter([
+            // Livewire ships as an optional (suggested) dependency. When present,
+            // register its provider so the bundled UI components can be tested;
+            // testbench does not auto-discover dependency providers.
+            class_exists(LivewireServiceProvider::class)
+                ? LivewireServiceProvider::class
+                : null,
             MessengerServiceProvider::class,
-        ];
+        ]);
     }
 
     public function getEnvironmentSetUp($app)
     {
+        // Livewire encrypts component checksums, which requires an app key.
+        config()->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+
         // Default to in-memory SQLite for fast local runs, but allow CI to point
         // the suite at MySQL or PostgreSQL via DB_CONNECTION so the package's
         // concurrency / locking paths are exercised on real databases (#69).
