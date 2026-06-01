@@ -188,6 +188,127 @@ class Thread extends Component
     }
 
     /**
+     * Per-participant state of the open conversation, for the header menu labels.
+     *
+     * @return array{starred: bool, archived: bool, blocked: bool}
+     */
+    #[Computed]
+    public function state(): array
+    {
+        $me = $this->participant();
+        $conversation = $this->conversationId ? $this->resolveConversation($this->conversationId, $me) : null;
+        $mine = ($conversation && $me) ? $conversation->participantFor($me) : null;
+
+        return [
+            'starred' => (bool) $mine?->starred_at,
+            'archived' => (bool) $mine?->archived_at,
+            'blocked' => (bool) $mine?->blocked_at,
+        ];
+    }
+
+    public function toggleStar(): void
+    {
+        $this->withConversation(function (Conversation $conversation, MessengerParticipant $me): void {
+            $this->state()['starred']
+                ? Messenger::unstar($conversation, $me)
+                : Messenger::star($conversation, $me);
+        });
+    }
+
+    public function toggleArchive(): void
+    {
+        $this->withConversation(function (Conversation $conversation, MessengerParticipant $me): void {
+            $this->state()['archived']
+                ? Messenger::unarchive($conversation, $me)
+                : Messenger::archive($conversation, $me);
+        });
+    }
+
+    public function toggleBlock(): void
+    {
+        $this->withConversation(function (Conversation $conversation, MessengerParticipant $me): void {
+            $this->state()['blocked']
+                ? Messenger::unblock($conversation, $me)
+                : Messenger::block($conversation, $me);
+        });
+    }
+
+    public function markUnread(): void
+    {
+        $this->withConversation(function (Conversation $conversation, MessengerParticipant $me): void {
+            Messenger::markAsUnread($conversation, $me);
+        });
+    }
+
+    public function clearChat(): void
+    {
+        $this->withConversation(function (Conversation $conversation, MessengerParticipant $me): void {
+            Messenger::clear($conversation, $me);
+            $this->loadLatest($conversation, $me);
+        });
+    }
+
+    public function moveToSpam(): void
+    {
+        $this->withConversation(function (Conversation $conversation, MessengerParticipant $me): void {
+            Messenger::spam($conversation, $me);
+        });
+    }
+
+    /**
+     * Enter reply mode for a message by handing the composer a quoted preview.
+     */
+    public function requestReply(string $messageId): void
+    {
+        $preview = null;
+
+        foreach ($this->messages as $message) {
+            if ($message['id'] === $messageId) {
+                $preview = $message['body'];
+                break;
+            }
+        }
+
+        $this->dispatch('reply-requested', messageId: $messageId, preview: $preview);
+    }
+
+    public function report(string $messageId, ?string $reason = null): void
+    {
+        $this->withConversation(function (Conversation $conversation, MessengerParticipant $me) use ($messageId, $reason): void {
+            $message = Models::message()::query()
+                ->where('conversation_id', $conversation->id)
+                ->whereKey($messageId)
+                ->first();
+
+            if ($message !== null) {
+                Messenger::report($message, $me, $reason);
+                $this->dispatch('message-reported', messageId: $messageId);
+            }
+        });
+    }
+
+    /**
+     * Run a per-participant conversation action, then refresh the sidebar and
+     * the composer (block/spam toggles its locked state) via one event.
+     *
+     * @param  \Closure(Conversation, MessengerParticipant): void  $callback
+     */
+    protected function withConversation(\Closure $callback): void
+    {
+        $me = $this->participant();
+        $conversation = $this->conversationId ? $this->resolveConversation($this->conversationId, $me) : null;
+
+        if (! $conversation || ! $me) {
+            return;
+        }
+
+        $callback($conversation, $me);
+
+        unset($this->state);
+        $this->dispatch('conversation-updated', conversationId: $conversation->id);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     protected function toViewModel(Message $message, MessengerParticipant $me): array

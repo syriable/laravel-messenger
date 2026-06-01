@@ -20,6 +20,20 @@ return [
     'last_seen' => 'آخر ظهور :time',
     'typing' => ':name يكتب الآن…',
 
+    'menu' => [
+        'conversation' => 'إجراءات المحادثة',
+        'message' => 'إجراءات الرسالة',
+        'mark_unread' => 'تحديد كغير مقروءة',
+        'archive' => 'نقل إلى الأرشيف',
+        'unarchive' => 'إخراج من الأرشيف',
+        'block' => 'حظر',
+        'unblock' => 'إلغاء الحظر',
+        'clear' => 'مسح المحادثة',
+        'reply' => 'رد',
+        'report' => 'إبلاغ',
+        'spambox' => 'نقل إلى المزعج',
+    ],
+
     'composer' => [
         'placeholder' => 'اكتب رسالة…',
         'send' => 'إرسال',

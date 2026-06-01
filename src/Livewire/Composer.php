@@ -68,6 +68,13 @@ class Composer extends Component
         $this->replyPreview = null;
     }
 
+    /**
+     * Re-render when the conversation's state changes elsewhere (e.g. block /
+     * spam from the thread menu) so the locked state recomputes.
+     */
+    #[On('conversation-updated')]
+    public function refresh(): void {}
+
     public function removeAttachment(int $index): void
     {
         unset($this->attachments[$index]);

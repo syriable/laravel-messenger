@@ -88,6 +88,61 @@
     border: 0;
 }
 
+[x-cloak] {
+    display: none !important;
+}
+
+/* --------------------------------------------------------- menus & icons */
+
+.msgr-iconbtn {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: var(--msgr-text-muted);
+    font-size: 18px;
+    line-height: 1;
+    padding: var(--msgr-space-1);
+    border-radius: var(--msgr-radius-sm);
+}
+
+.msgr-iconbtn:hover {
+    background: var(--msgr-surface-hover);
+    color: var(--msgr-text);
+}
+
+.msgr-menu {
+    position: absolute;
+    inset-inline-end: 0;
+    z-index: 20;
+    min-inline-size: 180px;
+    padding: var(--msgr-space-1);
+    background: var(--msgr-surface);
+    border: 1px solid var(--msgr-border);
+    border-radius: var(--msgr-radius);
+    box-shadow: var(--msgr-shadow-menu);
+    display: flex;
+    flex-direction: column;
+}
+
+.msgr-menu button {
+    text-align: start;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: var(--msgr-space-2) var(--msgr-space-3);
+    border-radius: var(--msgr-radius-sm);
+    color: var(--msgr-text);
+    font: inherit;
+}
+
+.msgr-menu button:hover {
+    background: var(--msgr-surface-hover);
+}
+
+.msgr-menu__danger {
+    color: var(--msgr-unread);
+}
+
 /* ------------------------------------------------------------------ shell */
 
 .msgr {
@@ -403,6 +458,22 @@
     gap: var(--msgr-space-3);
     padding: var(--msgr-space-3) var(--msgr-space-4);
     border-block-end: 1px solid var(--msgr-border);
+}
+
+.msgr-thread__actions {
+    position: relative;
+    margin-inline-start: auto;
+}
+
+.msgr-message__menu {
+    position: relative;
+    margin-inline-start: auto;
+    opacity: 0;
+}
+
+.msgr-message:hover .msgr-message__menu,
+.msgr-message__menu:focus-within {
+    opacity: 1;
 }
 
 .msgr-thread__identity {

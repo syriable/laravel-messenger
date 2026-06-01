@@ -14,6 +14,15 @@
                 {{ ($message['is_self'] ?? false) ? __('messenger::ui.you') : $message['sender_name'] }}
             </span>
             <x-messenger::timestamp :value="$message['time'] ?? null" :relative="false" />
+
+            <div class="msgr-message__menu" x-data="{ open: false }">
+                <button type="button" class="msgr-iconbtn" @click="open = ! open" :aria-expanded="open" aria-haspopup="menu" aria-label="{{ __('messenger::ui.menu.message') }}">&ctdot;</button>
+                <div class="msgr-menu" role="menu" x-show="open" x-cloak @click.outside="open = false">
+                    <button type="button" role="menuitem" wire:click="requestReply('{{ $message['id'] }}')" @click="open = false">{{ __('messenger::ui.menu.reply') }}</button>
+                    <button type="button" role="menuitem" wire:click="report('{{ $message['id'] }}')" @click="open = false">{{ __('messenger::ui.menu.report') }}</button>
+                    <button type="button" role="menuitem" class="msgr-menu__danger" wire:click="moveToSpam" @click="open = false">{{ __('messenger::ui.menu.spambox') }}</button>
+                </div>
+            </div>
         </div>
 
         @if (! empty($message['reply_to']))

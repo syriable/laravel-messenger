@@ -21,6 +21,20 @@ return [
     'last_seen' => 'Last seen :time',
     'typing' => ':name is typing…',
 
+    'menu' => [
+        'conversation' => 'Conversation actions',
+        'message' => 'Message actions',
+        'mark_unread' => 'Mark as unread',
+        'archive' => 'Move to archive',
+        'unarchive' => 'Move out of archive',
+        'block' => 'Block',
+        'unblock' => 'Unblock',
+        'clear' => 'Clear chat',
+        'reply' => 'Reply',
+        'report' => 'Report',
+        'spambox' => 'Move to spambox',
+    ],
+
     'composer' => [
         'placeholder' => 'Type a message…',
         'send' => 'Send',

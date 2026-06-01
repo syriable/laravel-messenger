@@ -56,6 +56,7 @@ class Sidebar extends Component
      */
     #[On('message-sent')]
     #[On('conversation-read')]
+    #[On('conversation-updated')]
     public function refresh(): void {}
 
     /**

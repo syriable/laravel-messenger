@@ -14,6 +14,23 @@
                     @endif
                 </span>
             </div>
+
+            <div class="msgr-thread__actions" x-data="{ open: false }">
+                <button type="button" class="msgr-iconbtn" @click="open = ! open" :aria-expanded="open" aria-haspopup="menu" aria-label="{{ __('messenger::ui.menu.conversation') }}">&ctdot;</button>
+                <div class="msgr-menu" role="menu" x-show="open" x-cloak @click.outside="open = false" wire:loading.remove>
+                    <button type="button" role="menuitem" wire:click="toggleStar" @click="open = false">
+                        {{ $this->state['starred'] ? __('messenger::ui.unstar') : __('messenger::ui.star') }}
+                    </button>
+                    <button type="button" role="menuitem" wire:click="markUnread" @click="open = false">{{ __('messenger::ui.menu.mark_unread') }}</button>
+                    <button type="button" role="menuitem" wire:click="toggleArchive" @click="open = false">
+                        {{ $this->state['archived'] ? __('messenger::ui.menu.unarchive') : __('messenger::ui.menu.archive') }}
+                    </button>
+                    <button type="button" role="menuitem" wire:click="toggleBlock" @click="open = false">
+                        {{ $this->state['blocked'] ? __('messenger::ui.menu.unblock') : __('messenger::ui.menu.block') }}
+                    </button>
+                    <button type="button" role="menuitem" class="msgr-menu__danger" wire:click="clearChat" @click="open = false">{{ __('messenger::ui.menu.clear') }}</button>
+                </div>
+            </div>
         </header>
 
         @include('messenger::livewire.partials.realtime')
