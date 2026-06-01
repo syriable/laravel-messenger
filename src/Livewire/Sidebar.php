@@ -95,7 +95,8 @@ class Sidebar extends Component
     protected function toViewModel(Conversation $conversation, MessengerParticipant $me, ParticipantPresenter $presenter): array
     {
         $mine = $conversation->participantFor($me);
-        $other = $conversation->otherParticipantFor($me)?->participant;
+        $otherModel = $conversation->otherParticipantFor($me)?->participant;
+        $other = $otherModel instanceof MessengerParticipant ? $otherModel : null;
         $last = $conversation->lastMessage;
 
         $lastIsMine = $last
@@ -109,8 +110,8 @@ class Sidebar extends Component
             'snippet' => $last?->body,
             'is_self_last' => (bool) $lastIsMine,
             'time' => $conversation->last_message_at,
-            'unread' => (int) ($mine?->unread_count ?? 0),
-            'starred' => (bool) $mine?->starred_at,
+            'unread' => (int) $mine->unread_count,
+            'starred' => (bool) $mine->starred_at,
             'active' => $this->activeConversationId === $conversation->id,
         ];
     }

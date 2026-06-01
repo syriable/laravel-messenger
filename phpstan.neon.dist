@@ -15,4 +15,8 @@ parameters:
     # calls there are not flagged as "outside the config directory".
     configDirectories:
         - config
+    # Register the package view namespace so Larastan can resolve `messenger::*`
+    # view strings exactly as the service provider does at runtime.
+    bootstrapFiles:
+        - tests/phpstan/register-views.php
     tmpDir: build/phpstan
