@@ -109,6 +109,7 @@ class TestCase extends Orchestra
     protected function dropMessengerTables(): void
     {
         foreach ([
+            'messenger_saved_messages',
             'messenger_message_reports',
             'messenger_message_attachments',
             'messenger_messages',

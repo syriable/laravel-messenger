@@ -39,6 +39,10 @@ function messengerPublicApi(): array
         'markAsRead' => [2, 'Syriable\Messenger\Models\Participant'],
         'markAsUnread' => [2, 'Syriable\Messenger\Models\Participant'],
         'report' => [2, 'Syriable\Messenger\Models\MessageReport'],
+        'save' => [2, 'Syriable\Messenger\Models\SavedMessage'],
+        'unsave' => [2, 'void'],
+        'saved' => [1, 'Illuminate\Support\Collection'],
+        'isSaved' => [2, 'bool'],
         'pruneAttachments' => [0, 'Illuminate\Support\Collection'],
     ];
 }

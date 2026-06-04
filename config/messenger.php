@@ -5,6 +5,7 @@ use Syriable\Messenger\Models\Message;
 use Syriable\Messenger\Models\MessageAttachment;
 use Syriable\Messenger\Models\MessageReport;
 use Syriable\Messenger\Models\Participant;
+use Syriable\Messenger\Models\SavedMessage;
 use Syriable\Messenger\Pipelines\Send\EnsureAttachmentsAreValid;
 use Syriable\Messenger\Pipelines\Send\EnsureConversationIsNotBlocked;
 use Syriable\Messenger\Pipelines\Send\EnsureMessageHasContent;
@@ -33,6 +34,7 @@ return [
         'messages' => 'messenger_messages',
         'attachments' => 'messenger_message_attachments',
         'reports' => 'messenger_message_reports',
+        'saved' => 'messenger_saved_messages',
     ],
 
     /*
@@ -51,6 +53,7 @@ return [
         'message' => Message::class,
         'attachment' => MessageAttachment::class,
         'report' => MessageReport::class,
+        'saved' => SavedMessage::class,
     ],
 
     /*

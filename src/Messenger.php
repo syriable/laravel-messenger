@@ -10,6 +10,7 @@ use Syriable\Messenger\Actions\MarkConversationAsReadAction;
 use Syriable\Messenger\Actions\MarkConversationAsUnreadAction;
 use Syriable\Messenger\Actions\PruneAttachmentsAction;
 use Syriable\Messenger\Actions\ReportMessageAction;
+use Syriable\Messenger\Actions\SaveMessageAction;
 use Syriable\Messenger\Actions\SendMessageAction;
 use Syriable\Messenger\Actions\SpamConversationAction;
 use Syriable\Messenger\Actions\StarConversationAction;
@@ -19,9 +20,11 @@ use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
 use Syriable\Messenger\Models\MessageReport;
 use Syriable\Messenger\Models\Participant;
+use Syriable\Messenger\Models\SavedMessage;
 use Syriable\Messenger\Queries\FindConversationBetweenQuery;
 use Syriable\Messenger\Queries\GetConversationMessagesQuery;
 use Syriable\Messenger\Queries\GetInboxConversationsQuery;
+use Syriable\Messenger\Queries\GetSavedMessagesQuery;
 use Syriable\Messenger\Queries\GetUnreadCountQuery;
 
 /**
@@ -147,6 +150,42 @@ class Messenger
     public function report(Message $message, MessengerParticipant $reporter, ?string $reason = null, ?string $note = null): MessageReport
     {
         return app(ReportMessageAction::class)->execute($message, $reporter, $reason, $note);
+    }
+
+    /**
+     * Save (bookmark) a message for a participant. Idempotent.
+     */
+    public function save(Message $message, MessengerParticipant $participant): SavedMessage
+    {
+        return app(SaveMessageAction::class)->execute($message, $participant);
+    }
+
+    /**
+     * Remove a message from a participant's saved set. No-op if not saved.
+     */
+    public function unsave(Message $message, MessengerParticipant $participant): void
+    {
+        app(SaveMessageAction::class)->undo($message, $participant);
+    }
+
+    /**
+     * A participant's saved messages, most recently saved first.
+     *
+     * Options: conversation_id (string) to scope to one conversation, limit (?int).
+     *
+     * @return Collection<int, Message>
+     */
+    public function saved(MessengerParticipant $participant, array $options = []): Collection
+    {
+        return app(GetSavedMessagesQuery::class)->execute($participant, $options);
+    }
+
+    /**
+     * Whether a participant has saved a given message.
+     */
+    public function isSaved(Message $message, MessengerParticipant $participant): bool
+    {
+        return app(GetSavedMessagesQuery::class)->isSaved($message, $participant);
     }
 
     /**
