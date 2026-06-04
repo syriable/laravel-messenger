@@ -39,6 +39,9 @@ class Thread extends Component
     /** The other participant's display name while they are typing (ephemeral). */
     public ?string $typingName = null;
 
+    /** Active tab: "messages" | "saved". */
+    public string $tab = 'messages';
+
     public function mount(?string $conversationId = null): void
     {
         $this->perPage = (int) config('messenger.ui.per_page', 30);
@@ -285,6 +288,75 @@ class Thread extends Component
                 $this->dispatch('message-reported', messageId: $messageId);
             }
         });
+    }
+
+    public function switchTab(string $tab): void
+    {
+        $this->tab = in_array($tab, ['messages', 'saved'], true) ? $tab : 'messages';
+    }
+
+    public function toggleSave(string $messageId): void
+    {
+        $me = $this->participant();
+        $conversation = $this->conversationId ? $this->resolveConversation($this->conversationId, $me) : null;
+
+        if (! $conversation || ! $me) {
+            return;
+        }
+
+        $message = Models::message()::query()
+            ->where('conversation_id', $conversation->id)
+            ->whereKey($messageId)
+            ->first();
+
+        if ($message === null) {
+            return;
+        }
+
+        Messenger::isSaved($message, $me)
+            ? Messenger::unsave($message, $me)
+            : Messenger::save($message, $me);
+
+        unset($this->savedIds, $this->savedRows);
+    }
+
+    /**
+     * Ids of the open conversation's messages this participant has saved, for
+     * rendering the Save/Unsave affordance on each row.
+     *
+     * @return array<int, string>
+     */
+    #[Computed]
+    public function savedIds(): array
+    {
+        $me = $this->participant();
+
+        if (! $me || ! $this->conversationId) {
+            return [];
+        }
+
+        return Messenger::saved($me, ['conversation_id' => $this->conversationId])
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * View-models for the "Saved" tab — saved messages in this conversation.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    #[Computed]
+    public function savedRows(): array
+    {
+        $me = $this->participant();
+
+        if (! $me || ! $this->conversationId) {
+            return [];
+        }
+
+        return Messenger::saved($me, ['conversation_id' => $this->conversationId])
+            ->map(fn (Message $message) => $this->toViewModel($message, $me))
+            ->all();
     }
 
     /**

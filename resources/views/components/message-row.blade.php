@@ -1,5 +1,6 @@
 @props([
     'message', // view-model array from the Thread component
+    'saved' => false,
 ])
 
 <div @class([
@@ -19,6 +20,7 @@
                 <button type="button" class="msgr-iconbtn" @click="open = ! open" :aria-expanded="open" aria-haspopup="menu" aria-label="{{ __('messenger::ui.menu.message') }}">&ctdot;</button>
                 <div class="msgr-menu" role="menu" x-show="open" x-cloak @click.outside="open = false">
                     <button type="button" role="menuitem" wire:click="requestReply('{{ $message['id'] }}')" @click="open = false">{{ __('messenger::ui.menu.reply') }}</button>
+                    <button type="button" role="menuitem" wire:click="toggleSave('{{ $message['id'] }}')" @click="open = false">{{ $saved ? __('messenger::ui.menu.unsave') : __('messenger::ui.menu.save') }}</button>
                     <button type="button" role="menuitem" wire:click="report('{{ $message['id'] }}')" @click="open = false">{{ __('messenger::ui.menu.report') }}</button>
                     <button type="button" role="menuitem" class="msgr-menu__danger" wire:click="moveToSpam" @click="open = false">{{ __('messenger::ui.menu.spambox') }}</button>
                 </div>

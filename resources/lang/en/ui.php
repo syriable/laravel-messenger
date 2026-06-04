@@ -33,6 +33,13 @@ return [
         'reply' => 'Reply',
         'report' => 'Report',
         'spambox' => 'Move to spambox',
+        'save' => 'Save',
+        'unsave' => 'Unsave',
+    ],
+
+    'tab' => [
+        'messages' => 'Messages',
+        'saved' => 'Saved',
     ],
 
     'composer' => [
@@ -66,5 +73,6 @@ return [
         'inbox_subtitle' => 'Select a conversation and chat away.',
         'list' => 'No conversations yet.',
         'no_results' => 'No conversations match your search.',
+        'saved' => 'No saved messages yet.',
     ],
 ];

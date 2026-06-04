@@ -33,33 +33,52 @@
             </div>
         </header>
 
-        @include('messenger::livewire.partials.realtime')
-
-        <div
-            class="msgr-thread__messages"
-            role="log"
-            aria-live="polite"
-            @unless (config('messenger.broadcasting.enabled'))
-                wire:poll.visible.{{ config('messenger.ui.polling.thread', '5s') }}="poll"
-            @endunless
-        >
-            @if ($hasMoreOlder)
-                <div class="msgr-thread__more">
-                    <button type="button" wire:click="loadOlder" wire:loading.attr="disabled">
-                        {{ __('messenger::ui.load_earlier') }}
-                    </button>
-                </div>
-            @endif
-
-            @foreach ($messages as $message)
-                <x-messenger::message-row :message="$message" wire:key="msg-{{ $message['id'] }}" />
-            @endforeach
+        <div class="msgr-thread__tabs" role="tablist">
+            <button type="button" role="tab" wire:click="switchTab('messages')"
+                @class(['msgr-tab', 'msgr-tab--active' => $tab === 'messages'])
+                aria-selected="{{ $tab === 'messages' ? 'true' : 'false' }}">{{ __('messenger::ui.tab.messages') }}</button>
+            <button type="button" role="tab" wire:click="switchTab('saved')"
+                @class(['msgr-tab', 'msgr-tab--active' => $tab === 'saved'])
+                aria-selected="{{ $tab === 'saved' ? 'true' : 'false' }}">{{ __('messenger::ui.tab.saved') }}</button>
         </div>
 
-        @if ($typingName)
-            <div class="msgr-thread__typing" aria-live="polite">
-                {{ __('messenger::ui.typing', ['name' => $typingName]) }}
+        @if ($tab === 'saved')
+            <div class="msgr-thread__messages" role="log">
+                @forelse ($this->savedRows as $message)
+                    <x-messenger::message-row :message="$message" :saved="true" wire:key="saved-{{ $message['id'] }}" />
+                @empty
+                    <p class="msgr-rail__empty">{{ __('messenger::ui.empty.saved') }}</p>
+                @endforelse
             </div>
+        @else
+            @include('messenger::livewire.partials.realtime')
+
+            <div
+                class="msgr-thread__messages"
+                role="log"
+                aria-live="polite"
+                @unless (config('messenger.broadcasting.enabled'))
+                    wire:poll.visible.{{ config('messenger.ui.polling.thread', '5s') }}="poll"
+                @endunless
+            >
+                @if ($hasMoreOlder)
+                    <div class="msgr-thread__more">
+                        <button type="button" wire:click="loadOlder" wire:loading.attr="disabled">
+                            {{ __('messenger::ui.load_earlier') }}
+                        </button>
+                    </div>
+                @endif
+
+                @foreach ($messages as $message)
+                    <x-messenger::message-row :message="$message" :saved="in_array($message['id'], $this->savedIds, true)" wire:key="msg-{{ $message['id'] }}" />
+                @endforeach
+            </div>
+
+            @if ($typingName)
+                <div class="msgr-thread__typing" aria-live="polite">
+                    {{ __('messenger::ui.typing', ['name' => $typingName]) }}
+                </div>
+            @endif
         @endif
     @else
         <x-messenger::empty-state />

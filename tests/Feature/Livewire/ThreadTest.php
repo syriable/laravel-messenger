@@ -78,23 +78,26 @@ it('paginates older messages via the keyset cursor', function () {
     $alice = User::factory()->create(['name' => 'Alice']);
 
     $base = now()->subMinutes(10);
-    foreach (['m1', 'm2', 'm3', 'm4', 'm5'] as $i => $body) {
+    foreach (['alpha', 'bravo', 'charlie', 'delta', 'echo'] as $i => $body) {
         threadSendAt($alice, $me, $body, $base->copy()->addMinutes($i));
     }
     $conversation = Messenger::between($me, $alice);
 
+    // Assert on the component's message state (exact, ordered bodies) rather
+    // than the rendered HTML: a short token can collide with the lowercase ULIDs
+    // in Livewire's snapshot, which made assertDontSee() flaky.
+    $bodies = fn ($component) => collect($component->get('messages'))->pluck('body')->all();
+
     $component = Livewire::actingAs($me)
         ->test(Thread::class)
         ->call('open', $conversation->id)
-        ->assertSet('hasMoreOlder', true)
-        ->assertSee('m4')
-        ->assertSee('m5')
-        ->assertDontSee('m3');
+        ->assertSet('hasMoreOlder', true);
 
-    $component->call('loadOlder')
-        ->assertSee('m3')
-        ->assertSee('m2')
-        ->assertSee('m5'); // earlier page prepended, newest still present
+    expect($bodies($component))->toBe(['delta', 'echo']); // latest page, chronological
+
+    $component->call('loadOlder');
+
+    expect($bodies($component))->toBe(['bravo', 'charlie', 'delta', 'echo']); // older page prepended
 });
 
 it('does not open a conversation the participant is not part of', function () {
