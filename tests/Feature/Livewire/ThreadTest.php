@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use Syriable\Messenger\Facades\Messenger;
 use Syriable\Messenger\Livewire\Thread;
@@ -11,6 +12,19 @@ use Syriable\Messenger\Tests\Support\FakeOnlinePresenceResolver;
  * bottom-anchored newest last, loads older pages via the keyset cursor, marks
  * the conversation read on open, and enforces membership.
  */
+
+/**
+ * Send at a controllable time so message ordering is deterministic for keyset
+ * pagination assertions, instead of depending on sub-microsecond timing.
+ */
+function threadSendAt(User $from, User $to, string $body, Carbon $at): void
+{
+    Carbon::setTestNow($at);
+    Messenger::send($from, $to, $body);
+    Carbon::setTestNow();
+}
+
+afterEach(fn () => Carbon::setTestNow());
 it('opens a conversation and shows its messages', function () {
     $me = User::factory()->create(['name' => 'Me']);
     $alice = User::factory()->create(['name' => 'Alice']);
@@ -63,8 +77,9 @@ it('paginates older messages via the keyset cursor', function () {
     $me = User::factory()->create(['name' => 'Me']);
     $alice = User::factory()->create(['name' => 'Alice']);
 
-    foreach (['m1', 'm2', 'm3', 'm4', 'm5'] as $body) {
-        Messenger::send($alice, $me, $body);
+    $base = now()->subMinutes(10);
+    foreach (['m1', 'm2', 'm3', 'm4', 'm5'] as $i => $body) {
+        threadSendAt($alice, $me, $body, $base->copy()->addMinutes($i));
     }
     $conversation = Messenger::between($me, $alice);
 
@@ -108,7 +123,7 @@ it('shows the empty state with no conversation selected', function () {
 it('appends new messages on the message-sent event', function () {
     $me = User::factory()->create(['name' => 'Me']);
     $alice = User::factory()->create(['name' => 'Alice']);
-    Messenger::send($alice, $me, 'first');
+    threadSendAt($alice, $me, 'first', now()->subMinutes(2));
     $conversation = Messenger::between($me, $alice);
 
     $component = Livewire::actingAs($me)
@@ -116,7 +131,7 @@ it('appends new messages on the message-sent event', function () {
         ->assertSee('first')
         ->assertDontSee('second');
 
-    Messenger::send($alice, $me, 'second');
+    threadSendAt($alice, $me, 'second', now()->subMinute());
 
     $component->dispatch('message-sent', conversationId: $conversation->id)
         ->assertSee('first')
@@ -153,14 +168,14 @@ it('shows and clears a typing indicator', function () {
 it('polls for new messages when realtime is unavailable', function () {
     $me = User::factory()->create(['name' => 'Me']);
     $alice = User::factory()->create(['name' => 'Alice']);
-    Messenger::send($alice, $me, 'first');
+    threadSendAt($alice, $me, 'first', now()->subMinutes(2));
     $conversation = Messenger::between($me, $alice);
 
     $component = Livewire::actingAs($me)
         ->test(Thread::class, ['conversationId' => $conversation->id])
         ->assertDontSee('second');
 
-    Messenger::send($alice, $me, 'second');
+    threadSendAt($alice, $me, 'second', now()->subMinute());
 
     $component->call('poll')->assertSee('second');
 });
