@@ -26,6 +26,27 @@ It is **Laravel-native, event-driven, performance-oriented and extensible by com
 - 📡 **Optional realtime** — event-driven broadcasting (Reverb / Pusher / Echo). Works fully without it.
 - 🧩 **Composable send pipeline** — plug in your own validation, filtering and moderation.
 
+## Optional full-stack UI (Livewire 4 + Filament)
+
+The domain is headless by default. When you want a ready-made interface, the
+package also ships an **opt-in** front end — installing it changes nothing for
+headless consumers:
+
+- 💻 **Livewire 4 chat UI** — a drop-in `<livewire:messenger />` with inbox
+  (filters + server-side search), threaded view (keyset pagination, attachments,
+  replies, date separators, read receipts, typing & presence), composer
+  (attachments, reply, Enter-behaviour), per-message and per-conversation
+  actions, a **Saved** tab, **emoji reactions**, themeable `--msgr-*` tokens
+  (flat & bubble styles, dark mode), realtime (Echo) with a polling fallback,
+  and first-class **RTL + i18n** (en/ar).
+- 🛠️ **Filament 5 plugin** — a reported-message **moderation queue** and a
+  panel **chat page**, via `$panel->plugin(MessengerPlugin::make())`.
+- ➕ **Additive domain features** — saved messages, inbox search, reactions,
+  presence/read-receipt resolvers and broadcasts — all backward-compatible.
+
+> **See [`docs/full-stack-usage.md`](docs/full-stack-usage.md)** for install,
+> mounting, resolvers, theming, realtime setup and the Filament integration.
+
 ## Installation
 
 ```bash

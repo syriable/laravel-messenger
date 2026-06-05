@@ -21,6 +21,7 @@ integration, Laravel 12+).
 | Fan-out | [`ux-review.md`](./ux-review.md) | F — UX Review |
 | **Fan-in** | [`master-implementation-plan.md`](./master-implementation-plan.md) | Consolidated |
 | Planning | [`backlog.md`](./backlog.md) | Epics/Features/Stories + proposed GitHub issues + risks/estimates |
+| **Usage** | [`full-stack-usage.md`](./full-stack-usage.md) | **How to install & use the implemented UI + Filament + new features** |
 | Reference | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Existing domain architecture (unchanged) |
 
 ## TL;DR
