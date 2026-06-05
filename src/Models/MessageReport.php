@@ -25,7 +25,19 @@ class MessageReport extends Model
     use HasPreciseTimestamps;
     use HasUlids;
 
-    protected $guarded = [];
+    /**
+     * Reports are written only through the report action. These are the columns
+     * it sets via `updateOrCreate()`; nothing else is mass-assignable (#audit S1).
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'message_id',
+        'reporter_type',
+        'reporter_id',
+        'reason',
+        'note',
+    ];
 
     public function getTable(): string
     {

@@ -31,7 +31,21 @@ class Message extends Model
     use HasPreciseTimestamps;
     use HasUlids;
 
-    protected $guarded = [];
+    /**
+     * Messages are written only through the send pipeline / action. Restricting
+     * mass assignment to the legitimate creation columns prevents request input
+     * from forging a `sender_id`/`sender_type` or back-dating `created_at`
+     * (#audit S1).
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'conversation_id',
+        'sender_type',
+        'sender_id',
+        'body',
+        'reply_to_id',
+    ];
 
     public function getTable(): string
     {

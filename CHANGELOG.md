@@ -4,6 +4,37 @@ All notable changes to `laravel-messenger` will be documented in this file.
 
 ## Unreleased
 
+### Security
+
+- **Mass-assignment hardening:** every model now declares an explicit `$fillable` allow-list instead of `$guarded = []`, so participant state (`unread_count`, `blocked_at`, `spammed_at`, …), message sender/`created_at`, and attachment disk/path can no longer be set from request input. The package actions write those columns via `forceFill()`/`increment()`, which are unaffected (audit S1).
+- **Participant-only reporting is now ON by default** (`messenger.reports.participants_only = true`): an identity outside a conversation can no longer report its messages. Set it to `false` to restore the fully unrestricted, host-authorised contract (audit Critical 2). **Behavioural change.**
+- **Ghost-participant verification is now ON by default** (`messenger.validation.verify_participants_exist = true`): a send to a non-existent sender/recipient is rejected. Costs two indexed existence checks on first send. Set it to `false` to skip the lookups (audit Critical 1). **Behavioural change.**
+- Add `messenger.attachments.verify_real_mime` (off by default): when on, `EnsureAttachmentsAreValid` also checks the server-sniffed MIME against the allow-list, catching a payload renamed to a permitted extension (audit S4).
+- Add `MessageAttachment::temporaryUrl()` for handing out short-lived signed links to private attachments (audit S2).
+
+### Added
+
+- `messenger:install` command to publish the migration stubs (and optionally the config), with `--migrate` and `--force`, plus `InstallCommand::tablesExist()` for boot-time missing-migration detection (audit High 4).
+- `messenger.messages.max_read_limit` config: a hard ceiling that caps any provided `limit` and bounds an omitted one, so `Messenger::messages()` can never load an entire conversation history into memory in production (audit P1). Default `null` (unbounded) preserves backward compatibility.
+
+### Performance
+
+- `PruneAttachmentsAction` now streams known attachment paths in chunks instead of pulling the entire `path` column into memory, so the prune scales to large attachment tables (audit P3).
+
+### CI
+
+- Add a PHP `--memory-limit=512M` to the PHPStan composer script and workflow so analysis no longer crashes on the default 128M limit (audit High 1).
+- Run the consuming-app integration smoke test and the multi-process first-message stress harness in CI (audit Medium 6).
+
+### Documentation
+
+- Update `docs/ARCHITECTURE.md` to reflect that `MessageSentBroadcast` carries a metadata-only attachment summary, that reporting is participant-only by default, and document the deliberate absence of message edit/delete/unsend in v1 (audit High 3, Medium 7).
+- Document the new install command, attachment `temporaryUrl()`, `verify_real_mime`, `max_read_limit`, and the secure-by-default guards in the README and published config.
+
+### Tests
+
+- Add `tests/Feature/AuditRemediationTest.php` and `tests/Feature/MissingScenariosTest.php` covering mass-assignment protection, secure-by-default guards, `temporaryUrl()`, real-MIME verification, the read-limit ceiling, the install command, host-wrapped transaction rollback, custom model override, and queued-broadcast rehydration.
+
 ## [0.10.0] - 2026-05-31
 
 ### Fixed
@@ -49,7 +80,7 @@ All notable changes to `laravel-messenger` will be documented in this file.
 - Document the reply-target validity/visibility constraint near the README `reply_to` example (#59); the lack of cascading deletes and host-owned participant cleanup with nullable `morphTo` accessors (#48, #49); the single-message `markAsUnread` semantic; and the attachment metadata-validation limitation (#51).
 - Warn in the `Messenger::messages()` usage example that omitting `limit` loads the entire visible history into memory; always pass a page size when paginating (#87).
 - Clarify that `markAsUnread()` sets `unread_count` to 1, not the participant's true historical unread count (#87).
-- Add a `Broadcast::channel()` authorization example and a callout that `'private' => false` (the default) means the channel is public and all payload fields are world-readable; recommend switching to `true` for private channels (#87).
+- Add a `Broadcast::channel()` authorization example and a callout that setting `'private' => false` makes the channel public so all payload fields are world-readable; the shipped default is `true` (private channels) (#87).
 - Fix the published config pipeline example to include `EnsureParticipantsExist::class`, which was referenced in configuration documentation but absent from the example (#87).
 
 ### Fixed (earlier)

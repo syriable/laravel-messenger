@@ -66,6 +66,17 @@ class EnsureAttachmentsAreValid implements SendPipe
             if (! $extensionOk || ! $mimeOk) {
                 throw InvalidAttachmentException::disallowedType($name);
             }
+
+            // Optional defence against type/extension spoofing: verify the
+            // server-detected (content-sniffed) mime against the allow-list too,
+            // so a payload renamed to a permitted extension is still rejected.
+            if ($allowedMimes !== [] && config('messenger.attachments.verify_real_mime', false)) {
+                $realMime = strtolower((string) $file->getMimeType());
+
+                if ($realMime !== '' && ! in_array($realMime, $allowedMimes, true)) {
+                    throw InvalidAttachmentException::disallowedType($name);
+                }
+            }
         }
 
         return $next($message);

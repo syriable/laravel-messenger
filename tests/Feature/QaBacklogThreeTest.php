@@ -15,9 +15,10 @@ it('ships every documented option in the config stub', function () {
     $config = require __DIR__.'/../../config/messenger.php';
 
     expect($config['validation'])->toHaveKey('verify_participants_exist')
-        ->and($config['validation']['verify_participants_exist'])->toBeFalse()
+        // Secure-by-default after the audit remediation: both guards now ship on.
+        ->and($config['validation']['verify_participants_exist'])->toBeTrue()
         ->and($config['reports'])->toHaveKey('participants_only')
-        ->and($config['reports']['participants_only'])->toBeFalse()
+        ->and($config['reports']['participants_only'])->toBeTrue()
         ->and($config['attachments'])->toHaveKey('allow_empty')
         ->and($config['attachments']['allow_empty'])->toBeFalse();
 });

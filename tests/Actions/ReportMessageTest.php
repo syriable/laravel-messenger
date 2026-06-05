@@ -77,13 +77,14 @@ it('updates the reason and note on a repeated report of the same message', funct
 });
 
 it('keeps reports from different reporters of the same message distinct', function () {
+    // Both reporters must be members of the conversation now that
+    // participants_only is enabled by default; the two sides report the message.
     $alice = User::factory()->create();
     $bob = User::factory()->create();
-    $carol = User::factory()->create();
     $message = Messenger::send($alice, $bob, 'hello');
 
     Messenger::report($message, $bob, 'spam');
-    Messenger::report($message, $carol, 'spam');
+    Messenger::report($message, $alice, 'spam');
 
     expect(MessageReport::count())->toBe(2);
 });
