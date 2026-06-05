@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create(config('messenger.tables.saved', 'messenger_saved_messages'), function (Blueprint $table) {
+            $table->ulid('id')->primary();
+
+            $table->ulid('message_id')->index();
+            // Denormalised so the per-conversation "Saved" view is a single
+            // indexed read without joining back through messages.
+            $table->ulid('conversation_id')->index();
+
+            // Morphable participant who saved the message.
+            $table->string('participant_type');
+            $table->string('participant_id');
+
+            $table->timestamps(6);
+
+            // A participant saves a given message at most once.
+            $table->unique(['participant_type', 'participant_id', 'message_id'], 'messenger_saved_unique');
+            // Fast "this participant's saved messages" lookup.
+            $table->index(['participant_type', 'participant_id'], 'messenger_saved_lookup');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(config('messenger.tables.saved', 'messenger_saved_messages'));
+    }
+};

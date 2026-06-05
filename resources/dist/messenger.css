@@ -1,0 +1,864 @@
+/*
+ * Laravel Messenger — UI design tokens & base styles.
+ *
+ * Everything is driven by CSS custom properties (`--msgr-*`) so a host can
+ * re-skin the messenger by overriding a handful of variables — no build step
+ * required. Two message display modes ship out of the box: a flat / email style
+ * (default) and a bubble style, switched with `data-msgr-style="bubble"`.
+ *
+ * Layout uses logical properties (inline-start/end) so RTL works by setting
+ * `dir="rtl"` on an ancestor — no separate stylesheet. Dark mode responds to
+ * `.dark` on an ancestor (Tailwind convention) or `prefers-color-scheme`.
+ */
+
+:root,
+[data-msgr-theme="neutral"] {
+    /* Brand / accent — neutral indigo by default (NOT Fiverr green). */
+    --msgr-accent: #4f46e5;
+    --msgr-accent-contrast: #ffffff;
+    --msgr-link: #4f46e5;
+
+    /* Surfaces */
+    --msgr-surface: #ffffff;
+    --msgr-surface-muted: #f7f7f8;
+    --msgr-surface-hover: #f2f2f4;
+    --msgr-surface-active: #ececef;
+
+    /* Text */
+    --msgr-text: #1f2024;
+    --msgr-text-muted: #74767e;
+    --msgr-text-inverse: #ffffff;
+
+    /* Lines & feedback */
+    --msgr-border: #e4e5e7;
+    --msgr-unread: #e11d48;
+    --msgr-online: #22c55e;
+    --msgr-away: #f59e0b;
+
+    /* Shape */
+    --msgr-radius-sm: 6px;
+    --msgr-radius: 8px;
+    --msgr-radius-lg: 16px;
+    --msgr-radius-round: 9999px;
+
+    /* Spacing scale */
+    --msgr-space-1: 4px;
+    --msgr-space-2: 8px;
+    --msgr-space-3: 12px;
+    --msgr-space-4: 16px;
+    --msgr-space-5: 20px;
+    --msgr-space-6: 24px;
+
+    /* Typography */
+    --msgr-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --msgr-text-name: 15px;
+    --msgr-text-body: 14px;
+    --msgr-text-meta: 12px;
+    --msgr-line: 1.5;
+
+    /* Elevation */
+    --msgr-shadow-menu: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+    /* Layout rails */
+    --msgr-rail-width: 340px;
+    --msgr-profile-width: 320px;
+}
+
+.dark,
+[data-msgr-theme="dark"] {
+    --msgr-surface: #1b1c1f;
+    --msgr-surface-muted: #232428;
+    --msgr-surface-hover: #2a2b30;
+    --msgr-surface-active: #303137;
+    --msgr-text: #f3f4f6;
+    --msgr-text-muted: #9ca3af;
+    --msgr-border: #34353a;
+    --msgr-shadow-menu: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.msgr-sr-only {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* --------------------------------------------------------- menus & icons */
+
+.msgr-iconbtn {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: var(--msgr-text-muted);
+    font-size: 18px;
+    line-height: 1;
+    padding: var(--msgr-space-1);
+    border-radius: var(--msgr-radius-sm);
+}
+
+.msgr-iconbtn:hover {
+    background: var(--msgr-surface-hover);
+    color: var(--msgr-text);
+}
+
+.msgr-menu {
+    position: absolute;
+    inset-inline-end: 0;
+    z-index: 20;
+    min-inline-size: 180px;
+    padding: var(--msgr-space-1);
+    background: var(--msgr-surface);
+    border: 1px solid var(--msgr-border);
+    border-radius: var(--msgr-radius);
+    box-shadow: var(--msgr-shadow-menu);
+    display: flex;
+    flex-direction: column;
+}
+
+.msgr-menu button {
+    text-align: start;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: var(--msgr-space-2) var(--msgr-space-3);
+    border-radius: var(--msgr-radius-sm);
+    color: var(--msgr-text);
+    font: inherit;
+}
+
+.msgr-menu button:hover {
+    background: var(--msgr-surface-hover);
+}
+
+.msgr-menu__danger {
+    color: var(--msgr-unread);
+}
+
+/* ------------------------------------------------------------------ shell */
+
+.msgr {
+    display: grid;
+    grid-template-columns: var(--msgr-rail-width) 1fr var(--msgr-profile-width);
+    block-size: 100%;
+    min-block-size: 0;
+    font-family: var(--msgr-font);
+    color: var(--msgr-text);
+    background: var(--msgr-surface);
+    font-size: var(--msgr-text-body);
+    line-height: var(--msgr-line);
+}
+
+.msgr__rail,
+.msgr__thread,
+.msgr__profile {
+    min-block-size: 0;
+    block-size: 100%;
+    overflow-y: auto;
+}
+
+.msgr__rail {
+    border-inline-end: 1px solid var(--msgr-border);
+}
+
+.msgr__profile {
+    border-inline-start: 1px solid var(--msgr-border);
+}
+
+.msgr__thread {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.msgr__thread-scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: var(--msgr-space-4);
+}
+
+.msgr__composer {
+    border-block-start: 1px solid var(--msgr-border);
+    padding: var(--msgr-space-3) var(--msgr-space-4);
+}
+
+/* Responsive: collapse profile, then fold into master-detail. */
+@media (max-width: 1279px) {
+    .msgr {
+        grid-template-columns: var(--msgr-rail-width) 1fr;
+    }
+    .msgr__profile {
+        display: none;
+    }
+}
+
+@media (max-width: 1023px) {
+    .msgr {
+        grid-template-columns: 1fr;
+    }
+    .msgr[data-msgr-view="list"] .msgr__thread,
+    .msgr[data-msgr-view="thread"] .msgr__rail {
+        display: none;
+    }
+}
+
+/* ------------------------------------------------------------- components */
+
+.msgr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--msgr-space-1);
+    padding: 2px var(--msgr-space-2);
+    border-radius: var(--msgr-radius-round);
+    font-size: var(--msgr-text-meta);
+    font-weight: 600;
+    line-height: 1.4;
+    background: var(--msgr-surface-muted);
+    color: var(--msgr-text-muted);
+}
+
+.msgr-badge--accent {
+    background: color-mix(in srgb, var(--msgr-accent) 14%, transparent);
+    color: var(--msgr-accent);
+}
+
+.msgr-counter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 18px;
+    block-size: 18px;
+    padding: 0 5px;
+    border-radius: var(--msgr-radius-round);
+    background: var(--msgr-unread);
+    color: var(--msgr-text-inverse);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.msgr-avatar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--msgr-radius-round);
+    background: var(--msgr-surface-active);
+    color: var(--msgr-text-muted);
+    font-weight: 600;
+    overflow: visible;
+    flex: 0 0 auto;
+}
+
+.msgr-avatar img {
+    inline-size: 100%;
+    block-size: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+}
+
+.msgr-presence {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-end: 0;
+    inline-size: 10px;
+    block-size: 10px;
+    border-radius: var(--msgr-radius-round);
+    border: 2px solid var(--msgr-surface);
+    background: var(--msgr-text-muted);
+}
+
+.msgr-presence--online { background: var(--msgr-online); }
+.msgr-presence--away { background: var(--msgr-away); }
+
+.msgr-star {
+    color: var(--msgr-text-muted);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    line-height: 0;
+}
+
+.msgr-star--on { color: var(--msgr-away); }
+
+.msgr-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--msgr-space-2);
+    block-size: 100%;
+    padding: var(--msgr-space-6);
+    text-align: center;
+    color: var(--msgr-text-muted);
+}
+
+.msgr-empty__title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--msgr-text);
+}
+
+/* ------------------------------------------------------------------- rail */
+
+.msgr-rail__inner {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+}
+
+.msgr-rail__header {
+    position: sticky;
+    inset-block-start: 0;
+    background: var(--msgr-surface);
+    padding: var(--msgr-space-3) var(--msgr-space-4);
+    border-block-end: 1px solid var(--msgr-border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--msgr-space-2);
+    z-index: 1;
+}
+
+.msgr-filter {
+    display: flex;
+    gap: var(--msgr-space-1);
+    flex-wrap: wrap;
+}
+
+.msgr-filter__opt {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: var(--msgr-space-1) var(--msgr-space-2);
+    border-radius: var(--msgr-radius-round);
+    font-size: var(--msgr-text-meta);
+    font-weight: 600;
+    color: var(--msgr-text-muted);
+}
+
+.msgr-filter__opt--active {
+    background: var(--msgr-surface-active);
+    color: var(--msgr-text);
+}
+
+.msgr-search input {
+    inline-size: 100%;
+    padding: var(--msgr-space-2) var(--msgr-space-3);
+    border: 1px solid var(--msgr-border);
+    border-radius: var(--msgr-radius);
+    background: var(--msgr-surface-muted);
+    color: var(--msgr-text);
+    font: inherit;
+}
+
+.msgr-rail__list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+
+.msgr-rail__empty {
+    padding: var(--msgr-space-6) var(--msgr-space-4);
+    color: var(--msgr-text-muted);
+    text-align: center;
+}
+
+.msgr-item-button {
+    display: block;
+    inline-size: 100%;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: start;
+    border-block-end: 1px solid var(--msgr-border);
+}
+
+.msgr-item-button:hover .msgr-item {
+    background: var(--msgr-surface-hover);
+}
+
+.msgr-item {
+    display: flex;
+    gap: var(--msgr-space-3);
+    align-items: center;
+    padding: var(--msgr-space-3) var(--msgr-space-4);
+}
+
+.msgr-item--active {
+    background: var(--msgr-surface-active);
+}
+
+.msgr-item__body {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+}
+
+.msgr-item__row {
+    display: flex;
+    align-items: center;
+    gap: var(--msgr-space-2);
+}
+
+.msgr-item__name {
+    font-weight: 600;
+    font-size: var(--msgr-text-name);
+    color: var(--msgr-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.msgr-item--unread .msgr-item__name {
+    font-weight: 700;
+}
+
+.msgr-item__time {
+    margin-inline-start: auto;
+    flex: 0 0 auto;
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-item__snippet {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-body);
+}
+
+.msgr-item--unread .msgr-item__snippet {
+    color: var(--msgr-text);
+}
+
+.msgr-item__me {
+    color: var(--msgr-text-muted);
+}
+
+/* ----------------------------------------------------------------- thread */
+
+.msgr-thread__inner {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+}
+
+.msgr-thread__header {
+    display: flex;
+    align-items: center;
+    gap: var(--msgr-space-3);
+    padding: var(--msgr-space-3) var(--msgr-space-4);
+    border-block-end: 1px solid var(--msgr-border);
+}
+
+.msgr-thread__actions {
+    position: relative;
+    margin-inline-start: auto;
+}
+
+.msgr-message__menu {
+    position: relative;
+    margin-inline-start: auto;
+    opacity: 0;
+}
+
+.msgr-message:hover .msgr-message__menu,
+.msgr-message__menu:focus-within {
+    opacity: 1;
+}
+
+.msgr-thread__identity {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.msgr-thread__name {
+    font-weight: 600;
+    font-size: var(--msgr-text-name);
+}
+
+.msgr-thread__handle,
+.msgr-thread__status {
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-date-sep {
+    display: flex;
+    justify-content: center;
+    margin-block: var(--msgr-space-3);
+}
+
+.msgr-date-sep span {
+    padding: 2px var(--msgr-space-3);
+    border-radius: var(--msgr-radius-round);
+    background: var(--msgr-surface-muted);
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-thread__typing {
+    padding: 0 var(--msgr-space-4) var(--msgr-space-2);
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+    font-style: italic;
+}
+
+.msgr-thread__scroll {
+    position: relative;
+    flex: 1 1 auto;
+    min-block-size: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.msgr-thread__messages {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: var(--msgr-space-4);
+}
+
+.msgr-unread-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    gap: var(--msgr-space-2);
+    margin-block: var(--msgr-space-3);
+    color: var(--msgr-unread);
+    font-size: var(--msgr-text-meta);
+    font-weight: 600;
+}
+
+.msgr-unread-divider::before,
+.msgr-unread-divider::after {
+    content: '';
+    flex: 1 1 auto;
+    border-block-start: 1px solid color-mix(in srgb, var(--msgr-unread) 40%, transparent);
+}
+
+.msgr-thread__fab {
+    position: absolute;
+    inset-block-end: var(--msgr-space-4);
+    inset-inline-end: var(--msgr-space-4);
+    inline-size: 40px;
+    block-size: 40px;
+    border-radius: var(--msgr-radius-round);
+    border: 1px solid var(--msgr-border);
+    background: var(--msgr-surface);
+    color: var(--msgr-text);
+    box-shadow: var(--msgr-shadow-menu);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.msgr-thread__fab-count {
+    position: absolute;
+    inset-block-start: -6px;
+    inset-inline-end: -6px;
+    min-inline-size: 18px;
+    block-size: 18px;
+    padding: 0 5px;
+    border-radius: var(--msgr-radius-round);
+    background: var(--msgr-unread);
+    color: var(--msgr-text-inverse);
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.msgr-thread__more {
+    display: flex;
+    justify-content: center;
+    padding-block-end: var(--msgr-space-3);
+}
+
+.msgr-thread__more button {
+    border: 1px solid var(--msgr-border);
+    background: var(--msgr-surface);
+    color: var(--msgr-text-muted);
+    border-radius: var(--msgr-radius-round);
+    padding: var(--msgr-space-1) var(--msgr-space-4);
+    font-size: var(--msgr-text-meta);
+    cursor: pointer;
+}
+
+.msgr-message__main {
+    min-inline-size: 0;
+    flex: 1 1 auto;
+}
+
+.msgr-message__meta {
+    display: flex;
+    align-items: baseline;
+    gap: var(--msgr-space-2);
+}
+
+.msgr-message__sender {
+    font-weight: 600;
+}
+
+.msgr-message__reactions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--msgr-space-1);
+    margin-block-start: var(--msgr-space-1);
+}
+
+.msgr-reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px var(--msgr-space-2);
+    border: 1px solid var(--msgr-border);
+    border-radius: var(--msgr-radius-round);
+    background: var(--msgr-surface);
+    cursor: pointer;
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-reaction--on {
+    border-color: var(--msgr-accent);
+    background: color-mix(in srgb, var(--msgr-accent) 12%, transparent);
+}
+
+.msgr-reaction__count {
+    color: var(--msgr-text-muted);
+}
+
+.msgr-reaction-add {
+    position: relative;
+    opacity: 0;
+}
+
+.msgr-message:hover .msgr-reaction-add,
+.msgr-reaction-add:focus-within {
+    opacity: 1;
+}
+
+.msgr-reaction-menu {
+    display: flex;
+    gap: var(--msgr-space-1);
+    min-inline-size: 0;
+    inset-inline-start: 0;
+}
+
+.msgr-reaction-menu button {
+    padding: var(--msgr-space-1);
+    font-size: 18px;
+}
+
+.msgr-message__receipt {
+    display: inline-block;
+    margin-block-start: var(--msgr-space-1);
+    font-size: var(--msgr-text-meta);
+    color: var(--msgr-text-muted);
+}
+
+.msgr-message__receipt--read {
+    color: var(--msgr-accent);
+}
+
+.msgr-message__reply {
+    margin-block: var(--msgr-space-1);
+    padding: var(--msgr-space-1) var(--msgr-space-2);
+    border-inline-start: 3px solid var(--msgr-border);
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-message__body {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.msgr-message__attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--msgr-space-2);
+    margin-block-start: var(--msgr-space-2);
+}
+
+.msgr-attach__img {
+    max-inline-size: 220px;
+    max-block-size: 220px;
+    border-radius: var(--msgr-radius);
+    object-fit: cover;
+}
+
+.msgr-attach__file {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--msgr-space-1);
+    padding: var(--msgr-space-2) var(--msgr-space-3);
+    border: 1px solid var(--msgr-border);
+    border-radius: var(--msgr-radius);
+    color: var(--msgr-link);
+    text-decoration: none;
+    font-size: var(--msgr-text-meta);
+}
+
+/* --------------------------------------------------------------- composer */
+
+.msgr-composer__inner {
+    border-block-start: 1px solid var(--msgr-border);
+    padding: var(--msgr-space-3) var(--msgr-space-4);
+}
+
+.msgr-composer__form {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--msgr-space-2);
+}
+
+.msgr-composer__input {
+    flex: 1 1 auto;
+    resize: none;
+    border: 1px solid var(--msgr-border);
+    border-radius: var(--msgr-radius);
+    padding: var(--msgr-space-2) var(--msgr-space-3);
+    font: inherit;
+    background: var(--msgr-surface-muted);
+    color: var(--msgr-text);
+    max-block-size: 160px;
+}
+
+.msgr-composer__attach {
+    cursor: pointer;
+    padding: var(--msgr-space-2);
+    line-height: 1;
+}
+
+.msgr-composer__send {
+    border: 0;
+    background: var(--msgr-accent);
+    color: var(--msgr-accent-contrast);
+    border-radius: var(--msgr-radius);
+    padding: var(--msgr-space-2) var(--msgr-space-4);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.msgr-composer__send[disabled] {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.msgr-composer__enter,
+.msgr-composer__emoji {
+    position: relative;
+}
+
+.msgr-emoji-menu {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    inset-block-end: 100%;
+    inset-inline-start: 0;
+    max-inline-size: 280px;
+}
+
+.msgr-emoji-menu button {
+    padding: var(--msgr-space-1);
+    font-size: 18px;
+}
+
+.msgr-menu__active {
+    font-weight: 700;
+    color: var(--msgr-accent);
+}
+
+.msgr-composer__locked {
+    color: var(--msgr-text-muted);
+    text-align: center;
+    padding: var(--msgr-space-2);
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-composer__reply {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--msgr-space-2);
+    padding: var(--msgr-space-2) var(--msgr-space-3);
+    margin-block-end: var(--msgr-space-2);
+    border-inline-start: 3px solid var(--msgr-accent);
+    background: var(--msgr-surface-muted);
+    border-radius: var(--msgr-radius-sm);
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-composer__error {
+    color: var(--msgr-unread);
+    font-size: var(--msgr-text-meta);
+    margin-block-end: var(--msgr-space-1);
+}
+
+.msgr-composer__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--msgr-space-1);
+    margin-block-end: var(--msgr-space-2);
+}
+
+.msgr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--msgr-space-1);
+    padding: 2px var(--msgr-space-2);
+    border-radius: var(--msgr-radius-round);
+    background: var(--msgr-surface-active);
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-chip button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: var(--msgr-text-muted);
+}
+
+/* ----------------------------------------------------------- message rows */
+
+.msgr-message {
+    display: flex;
+    gap: var(--msgr-space-3);
+    padding-block: var(--msgr-space-3);
+}
+
+.msgr-message__time {
+    margin-inline-start: auto;
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+}
+
+/* Bubble mode: align self-messages to the inline-end with a filled bubble. */
+[data-msgr-style="bubble"] .msgr-message__body {
+    display: inline-block;
+    padding: var(--msgr-space-2) var(--msgr-space-3);
+    border-radius: var(--msgr-radius-lg);
+    background: var(--msgr-surface-muted);
+}
+
+[data-msgr-style="bubble"] .msgr-message--self {
+    flex-direction: row-reverse;
+}
+
+[data-msgr-style="bubble"] .msgr-message--self .msgr-message__body {
+    background: var(--msgr-accent);
+    color: var(--msgr-accent-contrast);
+}

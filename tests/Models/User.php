@@ -4,6 +4,7 @@ namespace Syriable\Messenger\Tests\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Support\Messageable;
 use Syriable\Messenger\Tests\Database\Factories\UserFactory;
@@ -17,6 +18,7 @@ class User extends Authenticatable implements MessengerParticipant
 {
     use HasFactory;
     use Messageable;
+    use Notifiable;
 
     protected $guarded = [];
 

@@ -5,8 +5,10 @@ namespace Syriable\Messenger\Support;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
 use Syriable\Messenger\Models\MessageAttachment;
+use Syriable\Messenger\Models\MessageReaction;
 use Syriable\Messenger\Models\MessageReport;
 use Syriable\Messenger\Models\Participant;
+use Syriable\Messenger\Models\SavedMessage;
 
 /**
  * Central resolver for the package's Eloquent models.
@@ -47,6 +49,18 @@ class Models
         return config('messenger.models.report', MessageReport::class);
     }
 
+    /** @return class-string<SavedMessage> */
+    public static function savedMessage(): string
+    {
+        return config('messenger.models.saved', SavedMessage::class);
+    }
+
+    /** @return class-string<MessageReaction> */
+    public static function reaction(): string
+    {
+        return config('messenger.models.reaction', MessageReaction::class);
+    }
+
     public static function newConversation(): Conversation
     {
         $class = static::conversation();
@@ -64,6 +78,20 @@ class Models
     public static function newMessage(): Message
     {
         $class = static::message();
+
+        return new $class;
+    }
+
+    public static function newSavedMessage(): SavedMessage
+    {
+        $class = static::savedMessage();
+
+        return new $class;
+    }
+
+    public static function newReaction(): MessageReaction
+    {
+        $class = static::reaction();
 
         return new $class;
     }

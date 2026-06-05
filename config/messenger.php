@@ -3,14 +3,20 @@
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
 use Syriable\Messenger\Models\MessageAttachment;
+use Syriable\Messenger\Models\MessageReaction;
 use Syriable\Messenger\Models\MessageReport;
 use Syriable\Messenger\Models\Participant;
+use Syriable\Messenger\Models\SavedMessage;
 use Syriable\Messenger\Pipelines\Send\EnsureAttachmentsAreValid;
 use Syriable\Messenger\Pipelines\Send\EnsureConversationIsNotBlocked;
 use Syriable\Messenger\Pipelines\Send\EnsureMessageHasContent;
 use Syriable\Messenger\Pipelines\Send\EnsureParticipantsAreValid;
 use Syriable\Messenger\Pipelines\Send\EnsureParticipantsExist;
 use Syriable\Messenger\Pipelines\Send\EnsureReplyIsValid;
+use Syriable\Messenger\Support\AuthParticipantResolver;
+use Syriable\Messenger\Support\DefaultParticipantPresenter;
+use Syriable\Messenger\Support\NullParticipantSearchResolver;
+use Syriable\Messenger\Support\NullPresenceResolver;
 
 // Configuration for syriable/laravel-messenger.
 return [
@@ -30,6 +36,8 @@ return [
         'messages' => 'messenger_messages',
         'attachments' => 'messenger_message_attachments',
         'reports' => 'messenger_message_reports',
+        'saved' => 'messenger_saved_messages',
+        'reactions' => 'messenger_message_reactions',
     ],
 
     /*
@@ -48,6 +56,80 @@ return [
         'message' => Message::class,
         'attachment' => MessageAttachment::class,
         'report' => MessageReport::class,
+        'saved' => SavedMessage::class,
+        'reaction' => MessageReaction::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Participant presenter
+    |--------------------------------------------------------------------------
+    |
+    | Resolves a participant's display identity (name, avatar, handle, profile
+    | URL, timezone) for any UI. The domain stores only the morph type and key,
+    | so this is the single, swappable boundary for presentation. The default
+    | reads conventional attributes (name, avatar_url, username, ...) and falls
+    | back gracefully; point it at your own ParticipantPresenter implementation
+    | to take full control.
+    |
+    */
+    'presenter' => DefaultParticipantPresenter::class,
+
+    /*
+    |--------------------------------------------------------------------------
+    | User interface
+    |--------------------------------------------------------------------------
+    |
+    | Presentation settings for the bundled chat UI. These have no effect on the
+    | headless domain; they configure the optional Livewire interface only.
+    | theme: a `--msgr-*` token set ("neutral" | "dark" | a custom set you ship).
+    | message_style: "flat" (email-like rows) or "bubble" (aligned chat bubbles).
+    |
+    */
+    'ui' => [
+        'enabled' => true,
+
+        // The auth guard the default participant resolver reads (null = default).
+        'guard' => null,
+
+        // Resolves the participant whose inbox is shown. Swap for impersonation,
+        // multi-guard or tenant-scoped contexts.
+        'participant_resolver' => AuthParticipantResolver::class,
+
+        // Resolves participant presence ("online" / "last seen"). The default
+        // reports everyone offline; bind a presence-channel- or heartbeat-backed
+        // resolver to light up the online dots.
+        'presence_resolver' => NullPresenceResolver::class,
+
+        // Resolves participants matching an inbox search term by name/handle.
+        // The default matches none (search falls back to message bodies); bind
+        // your own to search your user models.
+        'search_resolver' => NullParticipantSearchResolver::class,
+
+        'route' => [
+            'prefix' => 'messages',
+            'name' => 'messenger.',
+            'middleware' => ['web', 'auth'],
+        ],
+
+        'theme' => 'neutral',
+        'message_style' => 'flat',
+
+        // Default composer behaviour: true = Enter sends (Shift+Enter = newline);
+        // false = Enter = newline (Ctrl/Cmd+Enter sends). Users can toggle it.
+        'enter_to_send' => true,
+
+        // The emoji offered by the composer's emoji picker.
+        'emoji' => ['😀', '😁', '😂', '🤣', '😊', '😍', '😘', '😎', '🤔', '😢', '😭', '😡', '👍', '👎', '🙏', '🎉', '❤️', '🔥', '💯', '✅'],
+
+        // Messages loaded per infinite-scroll page (keyset pagination).
+        'per_page' => 30,
+
+        // Polling intervals used when realtime broadcasting is unavailable.
+        'polling' => [
+            'inbox' => '15s',
+            'thread' => '5s',
+        ],
     ],
 
     /*
@@ -86,6 +168,36 @@ return [
         // conversation cannot report its messages. Set to false to restore the
         // fully headless contract and authorise reporting in your application.
         'participants_only' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reactions
+    |--------------------------------------------------------------------------
+    |
+    | The emoji a participant may react to a message with. An empty list allows
+    | any emoji; a non-empty list is enforced by the react action and also drives
+    | the UI picker.
+    |
+    */
+    'reactions' => [
+        'allowed' => ['👍', '❤️', '😂', '😮', '😢', '🙏'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    |
+    | Opt-in: when enabled, a listener notifies the recipient of each new message
+    | via the configured channels. A recipient model may opt out per message by
+    | implementing shouldReceiveMessengerNotification(Message): bool (mute is a
+    | host concern). Disabled by default to preserve the headless contract.
+    |
+    */
+    'notifications' => [
+        'enabled' => false,
+        'channels' => ['database'],
     ],
 
     /*

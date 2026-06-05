@@ -2,12 +2,26 @@
 
 namespace Syriable\Messenger\Tests;
 
+use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
+use BladeUI\Icons\BladeIconsServiceProvider;
+use Filament\Actions\ActionsServiceProvider;
+use Filament\FilamentServiceProvider;
+use Filament\Forms\FormsServiceProvider;
+use Filament\Infolists\InfolistsServiceProvider;
+use Filament\Notifications\NotificationsServiceProvider;
+use Filament\Schemas\SchemasServiceProvider;
+use Filament\Support\SupportServiceProvider;
+use Filament\Tables\TablesServiceProvider;
+use Filament\Widgets\WidgetsServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Syriable\Messenger\MessengerServiceProvider;
+use Syriable\Messenger\Tests\Concerns\WithFilamentPanel;
+use Syriable\Messenger\Tests\Fixtures\TestPanelProvider;
 
 class TestCase extends Orchestra
 {
@@ -24,13 +38,43 @@ class TestCase extends Orchestra
 
     protected function getPackageProviders($app)
     {
-        return [
+        $providers = array_filter([
+            // Livewire ships as an optional (suggested) dependency. When present,
+            // register its provider so the bundled UI components can be tested;
+            // testbench does not auto-discover dependency providers.
+            class_exists(LivewireServiceProvider::class)
+                ? LivewireServiceProvider::class
+                : null,
             MessengerServiceProvider::class,
-        ];
+        ]);
+
+        // Only the Filament tests (which opt in via the WithFilamentPanel trait)
+        // pay for Filament's providers + the test panel.
+        if (in_array(WithFilamentPanel::class, class_uses_recursive($this), true)) {
+            $providers = array_merge($providers, [
+                BladeIconsServiceProvider::class,
+                BladeHeroiconsServiceProvider::class,
+                SupportServiceProvider::class,
+                ActionsServiceProvider::class,
+                FormsServiceProvider::class,
+                TablesServiceProvider::class,
+                SchemasServiceProvider::class,
+                InfolistsServiceProvider::class,
+                NotificationsServiceProvider::class,
+                WidgetsServiceProvider::class,
+                FilamentServiceProvider::class,
+                TestPanelProvider::class,
+            ]);
+        }
+
+        return $providers;
     }
 
     public function getEnvironmentSetUp($app)
     {
+        // Livewire encrypts component checksums, which requires an app key.
+        config()->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+
         // Default to in-memory SQLite for fast local runs, but allow CI to point
         // the suite at MySQL or PostgreSQL via DB_CONNECTION so the package's
         // concurrency / locking paths are exercised on real databases (#69).
@@ -99,6 +143,8 @@ class TestCase extends Orchestra
     protected function dropMessengerTables(): void
     {
         foreach ([
+            'messenger_message_reactions',
+            'messenger_saved_messages',
             'messenger_message_reports',
             'messenger_message_attachments',
             'messenger_messages',

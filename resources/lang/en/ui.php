@@ -1,0 +1,109 @@
+<?php
+
+// English UI strings for the Laravel Messenger interface. Publish & translate
+// with `php artisan vendor:publish --tag="messenger-translations"`.
+
+return [
+    'conversations' => 'Conversations',
+    'conversation' => 'Conversation',
+    'about' => 'About',
+    'star' => 'Star conversation',
+    'unstar' => 'Unstar conversation',
+    'unread_messages' => '{1} :count unread message|[2,*] :count unread messages',
+    'search' => 'Search messages',
+    'search_placeholder' => 'Search…',
+    'you_prefix' => 'You:',
+    'you' => 'You',
+    'no_messages_yet' => 'No messages yet',
+    'unknown_participant' => 'Unknown',
+    'load_earlier' => 'Load earlier messages',
+    'attachment' => 'Attachment',
+    'new_messages' => '{1} :count new message|[2,*] :count new messages',
+    'scroll_to_bottom' => 'Scroll to latest',
+    'last_seen' => 'Last seen :time',
+    'typing' => ':name is typing…',
+
+    'date' => [
+        'today' => 'Today',
+        'yesterday' => 'Yesterday',
+    ],
+
+    'receipt' => [
+        'sent' => 'Sent',
+        'read' => 'Read',
+    ],
+
+    'reactions' => [
+        'add' => 'Add reaction',
+    ],
+
+    'menu' => [
+        'conversation' => 'Conversation actions',
+        'message' => 'Message actions',
+        'mark_unread' => 'Mark as unread',
+        'toggle_style' => 'Toggle bubble view',
+        'archive' => 'Move to archive',
+        'unarchive' => 'Move out of archive',
+        'block' => 'Block',
+        'unblock' => 'Unblock',
+        'clear' => 'Clear chat',
+        'reply' => 'Reply',
+        'report' => 'Report',
+        'spambox' => 'Move to spambox',
+        'save' => 'Save',
+        'unsave' => 'Unsave',
+    ],
+
+    'tab' => [
+        'messages' => 'Messages',
+        'saved' => 'Saved',
+    ],
+
+    'moderation' => [
+        'report' => 'Report',
+        'reports' => 'Reports',
+        'reporter' => 'Reporter',
+        'message' => 'Message',
+        'reason' => 'Reason',
+        'reported_at' => 'Reported at',
+        'dismiss' => 'Dismiss',
+    ],
+
+    'composer' => [
+        'placeholder' => 'Type a message…',
+        'send' => 'Send',
+        'attach' => 'Attach a file',
+        'emoji' => 'Emoji',
+        'remove_attachment' => 'Remove attachment',
+        'empty' => 'Write a message or attach a file.',
+        'locked' => 'You can no longer send messages in this conversation.',
+        'replying' => 'Replying to a message',
+        'cancel_reply' => 'Cancel reply',
+        'enter_behaviour' => 'Enter key behaviour',
+        'enter_send' => 'Enter sends · Shift+Enter for a new line',
+        'enter_newline' => 'Enter for a new line · Ctrl/⌘+Enter sends',
+    ],
+
+    'filter' => [
+        'label' => 'Filter conversations',
+        'all' => 'All',
+        'unread' => 'Unread',
+        'starred' => 'Starred',
+        'archived' => 'Archived',
+        'spam' => 'Spam',
+    ],
+
+    'presence' => [
+        'online' => 'Online',
+        'away' => 'Away',
+        'offline' => 'Offline',
+    ],
+
+    'empty' => [
+        'inbox_title' => 'Pick up where you left off',
+        'inbox_subtitle' => 'Select a conversation and chat away.',
+        'list' => 'No conversations yet.',
+        'no_results' => 'No conversations match your search.',
+        'saved' => 'No saved messages yet.',
+    ],
+];

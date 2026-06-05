@@ -9,7 +9,9 @@ use Syriable\Messenger\Actions\ClearConversationAction;
 use Syriable\Messenger\Actions\MarkConversationAsReadAction;
 use Syriable\Messenger\Actions\MarkConversationAsUnreadAction;
 use Syriable\Messenger\Actions\PruneAttachmentsAction;
+use Syriable\Messenger\Actions\ReactToMessageAction;
 use Syriable\Messenger\Actions\ReportMessageAction;
+use Syriable\Messenger\Actions\SaveMessageAction;
 use Syriable\Messenger\Actions\SendMessageAction;
 use Syriable\Messenger\Actions\SpamConversationAction;
 use Syriable\Messenger\Actions\StarConversationAction;
@@ -17,12 +19,17 @@ use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Data\NewMessage;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
+use Syriable\Messenger\Models\MessageReaction;
 use Syriable\Messenger\Models\MessageReport;
 use Syriable\Messenger\Models\Participant;
+use Syriable\Messenger\Models\SavedMessage;
 use Syriable\Messenger\Queries\FindConversationBetweenQuery;
 use Syriable\Messenger\Queries\GetConversationMessagesQuery;
 use Syriable\Messenger\Queries\GetInboxConversationsQuery;
+use Syriable\Messenger\Queries\GetMessageReactionsQuery;
+use Syriable\Messenger\Queries\GetSavedMessagesQuery;
 use Syriable\Messenger\Queries\GetUnreadCountQuery;
+use Syriable\Messenger\Queries\SearchInboxQuery;
 
 /**
  * The package's primary entry point — a thin facade over the actions and
@@ -53,11 +60,29 @@ class Messenger
     /**
      * A participant's inbox, ordered by latest activity.
      *
+     * Options: include_archived (bool), starred (bool), unread (bool),
+     * only_spam (bool), exclude_blocked (bool), exclude_spam (bool),
+     * with_participant_models (bool), limit (?int). unread and only_spam back
+     * the inbox filter dropdown (All / Unread / Starred / Archived / Spam).
+     *
      * @return Collection<int, Conversation>
      */
     public function inbox(MessengerParticipant $participant, array $options = []): Collection
     {
         return app(GetInboxConversationsQuery::class)->execute($participant, $options);
+    }
+
+    /**
+     * Search a participant's inbox by message body or — when a
+     * ParticipantSearchResolver is bound — the other participant's name/handle.
+     *
+     * Options: include_archived (bool), with_participant_models (bool), limit (?int).
+     *
+     * @return Collection<int, Conversation>
+     */
+    public function searchInbox(MessengerParticipant $participant, string $term, array $options = []): Collection
+    {
+        return app(SearchInboxQuery::class)->execute($participant, $term, $options);
     }
 
     /**
@@ -142,6 +167,63 @@ class Messenger
     public function report(Message $message, MessengerParticipant $reporter, ?string $reason = null, ?string $note = null): MessageReport
     {
         return app(ReportMessageAction::class)->execute($message, $reporter, $reason, $note);
+    }
+
+    /**
+     * Save (bookmark) a message for a participant. Idempotent.
+     */
+    public function save(Message $message, MessengerParticipant $participant): SavedMessage
+    {
+        return app(SaveMessageAction::class)->execute($message, $participant);
+    }
+
+    /**
+     * Remove a message from a participant's saved set. No-op if not saved.
+     */
+    public function unsave(Message $message, MessengerParticipant $participant): void
+    {
+        app(SaveMessageAction::class)->undo($message, $participant);
+    }
+
+    /**
+     * A participant's saved messages, most recently saved first.
+     *
+     * Options: conversation_id (string) to scope to one conversation, limit (?int).
+     *
+     * @return Collection<int, Message>
+     */
+    public function saved(MessengerParticipant $participant, array $options = []): Collection
+    {
+        return app(GetSavedMessagesQuery::class)->execute($participant, $options);
+    }
+
+    /**
+     * Whether a participant has saved a given message.
+     */
+    public function isSaved(Message $message, MessengerParticipant $participant): bool
+    {
+        return app(GetSavedMessagesQuery::class)->isSaved($message, $participant);
+    }
+
+    /**
+     * Toggle an emoji reaction on a message. Returns the created reaction, or
+     * null when the reaction was toggled off.
+     */
+    public function react(Message $message, MessengerParticipant $participant, string $emoji): ?MessageReaction
+    {
+        return app(ReactToMessageAction::class)->execute($message, $participant, $emoji);
+    }
+
+    /**
+     * Per-message reaction summaries (emoji, count, viewer-reacted) for a set of
+     * message ids, keyed by message id.
+     *
+     * @param  array<int, string>  $messageIds
+     * @return array<string, array<int, array{emoji: string, count: int, reacted: bool}>>
+     */
+    public function reactionsFor(array $messageIds, MessengerParticipant $viewer): array
+    {
+        return app(GetMessageReactionsQuery::class)->forMessages($messageIds, $viewer);
     }
 
     /**
