@@ -4,6 +4,7 @@ namespace Syriable\Messenger\Filament;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Syriable\Messenger\Filament\Pages\ChatPage;
 use Syriable\Messenger\Filament\Resources\MessageReportResource;
 
 /**
@@ -33,9 +34,13 @@ class MessengerPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel->resources([
-            MessageReportResource::class,
-        ]);
+        $panel
+            ->pages([
+                ChatPage::class,
+            ])
+            ->resources([
+                MessageReportResource::class,
+            ]);
     }
 
     public function boot(Panel $panel): void

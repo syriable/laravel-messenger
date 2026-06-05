@@ -3,6 +3,7 @@
 use Filament\Facades\Filament;
 use Syriable\Messenger\Facades\Messenger;
 use Syriable\Messenger\Filament\MessengerPlugin;
+use Syriable\Messenger\Filament\Pages\ChatPage;
 use Syriable\Messenger\Filament\Resources\MessageReportResource;
 use Syriable\Messenger\Filament\Resources\MessageReportResource\Pages\ListMessageReports;
 use Syriable\Messenger\Models\MessageReport;
@@ -21,6 +22,11 @@ it('registers the plugin with the messenger id', function () {
 
 it('resolves the configured report model', function () {
     expect(MessageReportResource::getModel())->toBe(MessageReport::class);
+});
+
+it('registers the chat page and its view on the panel', function () {
+    expect(Filament::getCurrentPanel()->getPages())->toContain(ChatPage::class)
+        ->and(view()->exists('messenger::filament.chat'))->toBeTrue();
 });
 
 it('registers the list page route on the resource', function () {
