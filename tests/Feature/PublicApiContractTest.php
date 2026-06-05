@@ -24,6 +24,7 @@ function messengerPublicApi(): array
         'send' => [3, 'Syriable\Messenger\Models\Message'],
         'between' => [2, '?Syriable\Messenger\Models\Conversation'],
         'inbox' => [1, 'Illuminate\Support\Collection'],
+        'searchInbox' => [2, 'Illuminate\Support\Collection'],
         'messages' => [2, 'Illuminate\Support\Collection'],
         'unreadCount' => [1, 'int'],
         'unreadConversations' => [1, 'int'],

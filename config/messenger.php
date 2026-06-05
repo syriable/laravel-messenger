@@ -14,6 +14,7 @@ use Syriable\Messenger\Pipelines\Send\EnsureParticipantsExist;
 use Syriable\Messenger\Pipelines\Send\EnsureReplyIsValid;
 use Syriable\Messenger\Support\AuthParticipantResolver;
 use Syriable\Messenger\Support\DefaultParticipantPresenter;
+use Syriable\Messenger\Support\NullParticipantSearchResolver;
 use Syriable\Messenger\Support\NullPresenceResolver;
 
 // Configuration for syriable/laravel-messenger.
@@ -96,6 +97,11 @@ return [
         // reports everyone offline; bind a presence-channel- or heartbeat-backed
         // resolver to light up the online dots.
         'presence_resolver' => NullPresenceResolver::class,
+
+        // Resolves participants matching an inbox search term by name/handle.
+        // The default matches none (search falls back to message bodies); bind
+        // your own to search your user models.
+        'search_resolver' => NullParticipantSearchResolver::class,
 
         'route' => [
             'prefix' => 'messages',

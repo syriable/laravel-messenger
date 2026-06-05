@@ -11,6 +11,7 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Syriable\Messenger\Commands\PruneAttachmentsCommand;
 use Syriable\Messenger\Contracts\CurrentParticipantResolver;
 use Syriable\Messenger\Contracts\ParticipantPresenter;
+use Syriable\Messenger\Contracts\ParticipantSearchResolver;
 use Syriable\Messenger\Contracts\PresenceResolver;
 use Syriable\Messenger\Events\ConversationRead;
 use Syriable\Messenger\Events\MessageSent;
@@ -22,6 +23,7 @@ use Syriable\Messenger\Livewire\Sidebar;
 use Syriable\Messenger\Livewire\Thread;
 use Syriable\Messenger\Support\AuthParticipantResolver;
 use Syriable\Messenger\Support\DefaultParticipantPresenter;
+use Syriable\Messenger\Support\NullParticipantSearchResolver;
 use Syriable\Messenger\Support\NullPresenceResolver;
 
 class MessengerServiceProvider extends PackageServiceProvider
@@ -73,6 +75,13 @@ class MessengerServiceProvider extends PackageServiceProvider
         // heartbeat-backed resolver via messenger.ui.presence_resolver.
         $this->app->bind(PresenceResolver::class, function ($app) {
             return $app->make($app['config']->get('messenger.ui.presence_resolver', NullPresenceResolver::class));
+        });
+
+        // Resolves participants matching an inbox search term by name/handle.
+        // Defaults to no matches (body-only search); hosts bind their own to
+        // search their user/seller/agent models.
+        $this->app->bind(ParticipantSearchResolver::class, function ($app) {
+            return $app->make($app['config']->get('messenger.ui.search_resolver', NullParticipantSearchResolver::class));
         });
     }
 

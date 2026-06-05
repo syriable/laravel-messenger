@@ -3,7 +3,6 @@
 namespace Syriable\Messenger\Livewire;
 
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
@@ -74,16 +73,21 @@ class Sidebar extends Component
         }
 
         $presenter = app(ParticipantPresenter::class);
+        $term = trim($this->search);
 
-        return Messenger::inbox($me, $this->options())
+        // A search term runs a global server-side search (message bodies +
+        // participant names via the host resolver); otherwise the scoped inbox.
+        $conversations = $term !== ''
+            ? Messenger::searchInbox($me, $term, ['with_participant_models' => true, 'include_archived' => true])
+            : Messenger::inbox($me, $this->options());
+
+        return $conversations
             ->map(fn (Conversation $conversation) => $this->toViewModel($conversation, $me, $presenter))
-            ->filter(fn (array $row) => $this->matchesSearch($row))
             ->values();
     }
 
     /**
-     * Inbox query options for the active scope. Search is applied in-memory for
-     * now; server-side search lands with the domain SearchInboxQuery (E1 F1.4).
+     * Inbox query options for the active scope.
      *
      * @return array<string, mixed>
      */
@@ -125,22 +129,6 @@ class Sidebar extends Component
             'starred' => (bool) $mine->starred_at,
             'active' => $this->activeConversationId === $conversation->id,
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $row
-     */
-    protected function matchesSearch(array $row): bool
-    {
-        $term = trim($this->search);
-
-        if ($term === '') {
-            return true;
-        }
-
-        $haystack = Str::lower(($row['name'] ?? '').' '.($row['snippet'] ?? ''));
-
-        return str_contains($haystack, Str::lower($term));
     }
 
     protected function participant(): ?MessengerParticipant

@@ -26,6 +26,7 @@ use Syriable\Messenger\Queries\GetConversationMessagesQuery;
 use Syriable\Messenger\Queries\GetInboxConversationsQuery;
 use Syriable\Messenger\Queries\GetSavedMessagesQuery;
 use Syriable\Messenger\Queries\GetUnreadCountQuery;
+use Syriable\Messenger\Queries\SearchInboxQuery;
 
 /**
  * The package's primary entry point — a thin facade over the actions and
@@ -66,6 +67,19 @@ class Messenger
     public function inbox(MessengerParticipant $participant, array $options = []): Collection
     {
         return app(GetInboxConversationsQuery::class)->execute($participant, $options);
+    }
+
+    /**
+     * Search a participant's inbox by message body or — when a
+     * ParticipantSearchResolver is bound — the other participant's name/handle.
+     *
+     * Options: include_archived (bool), with_participant_models (bool), limit (?int).
+     *
+     * @return Collection<int, Conversation>
+     */
+    public function searchInbox(MessengerParticipant $participant, string $term, array $options = []): Collection
+    {
+        return app(SearchInboxQuery::class)->execute($participant, $term, $options);
     }
 
     /**

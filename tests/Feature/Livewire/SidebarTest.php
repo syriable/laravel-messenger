@@ -4,6 +4,7 @@ use Livewire\Livewire;
 use Syriable\Messenger\Facades\Messenger;
 use Syriable\Messenger\Livewire\Sidebar;
 use Syriable\Messenger\Tests\Models\User;
+use Syriable\Messenger\Tests\Support\UserNameSearchResolver;
 
 /**
  * The Sidebar conversation-list island (Epic E3). It reads the current
@@ -64,17 +65,34 @@ it('filters the list to starred conversations', function () {
         ->assertDontSee('Bob');
 });
 
-it('searches the list in-memory by name', function () {
+it('searches by participant name via the bound resolver', function () {
+    config()->set('messenger.ui.search_resolver', UserNameSearchResolver::class);
+
     $me = User::factory()->create(['name' => 'Me']);
     $alice = User::factory()->create(['name' => 'Alice']);
     $bob = User::factory()->create(['name' => 'Bob']);
 
-    Messenger::send($alice, $me, 'a');
-    Messenger::send($bob, $me, 'b');
+    Messenger::send($alice, $me, 'apples');
+    Messenger::send($bob, $me, 'bananas');
 
     Livewire::actingAs($me)
         ->test(Sidebar::class)
         ->set('search', 'Alice')
+        ->assertSee('Alice')
+        ->assertDontSee('Bob');
+});
+
+it('searches by message body', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    $bob = User::factory()->create(['name' => 'Bob']);
+
+    Messenger::send($alice, $me, 'the quarterly report');
+    Messenger::send($bob, $me, 'lunch plans');
+
+    Livewire::actingAs($me)
+        ->test(Sidebar::class)
+        ->set('search', 'quarterly')
         ->assertSee('Alice')
         ->assertDontSee('Bob');
 });
