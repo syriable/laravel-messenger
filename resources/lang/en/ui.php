@@ -42,6 +42,16 @@ return [
         'saved' => 'Saved',
     ],
 
+    'moderation' => [
+        'report' => 'Report',
+        'reports' => 'Reports',
+        'reporter' => 'Reporter',
+        'message' => 'Message',
+        'reason' => 'Reason',
+        'reported_at' => 'Reported at',
+        'dismiss' => 'Dismiss',
+    ],
+
     'composer' => [
         'placeholder' => 'Type a message…',
         'send' => 'Send',

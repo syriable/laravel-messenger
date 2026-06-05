@@ -41,6 +41,16 @@ return [
         'saved' => 'المحفوظة',
     ],
 
+    'moderation' => [
+        'report' => 'بلاغ',
+        'reports' => 'البلاغات',
+        'reporter' => 'المُبلِّغ',
+        'message' => 'الرسالة',
+        'reason' => 'السبب',
+        'reported_at' => 'تاريخ البلاغ',
+        'dismiss' => 'تجاهل',
+    ],
+
     'composer' => [
         'placeholder' => 'اكتب رسالة…',
         'send' => 'إرسال',
