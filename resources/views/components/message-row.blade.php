@@ -1,6 +1,7 @@
 @props([
     'message', // view-model array from the Thread component
     'saved' => false,
+    'reactions' => [],
 ])
 
 <div @class([
@@ -56,5 +57,31 @@
                 @endforeach
             </div>
         @endif
+
+        @php $allowedEmoji = (array) config('messenger.reactions.allowed', []); @endphp
+        <div class="msgr-message__reactions">
+            @foreach ($reactions as $reaction)
+                <button
+                    type="button"
+                    wire:click="react('{{ $message['id'] }}', @js($reaction['emoji']))"
+                    @class(['msgr-reaction', 'msgr-reaction--on' => $reaction['reacted'] ?? false])
+                    aria-pressed="{{ ($reaction['reacted'] ?? false) ? 'true' : 'false' }}"
+                >
+                    <span aria-hidden="true">{{ $reaction['emoji'] }}</span>
+                    <span class="msgr-reaction__count">{{ $reaction['count'] }}</span>
+                </button>
+            @endforeach
+
+            @if ($allowedEmoji)
+                <div class="msgr-reaction-add" x-data="{ open: false }">
+                    <button type="button" class="msgr-iconbtn" @click="open = ! open" :aria-expanded="open" aria-haspopup="menu" aria-label="{{ __('messenger::ui.reactions.add') }}">+</button>
+                    <div class="msgr-menu msgr-reaction-menu" role="menu" x-show="open" x-cloak @click.outside="open = false">
+                        @foreach ($allowedEmoji as $emoji)
+                            <button type="button" wire:click="react('{{ $message['id'] }}', @js($emoji))" @click="open = false">{{ $emoji }}</button>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        </div>
     </div>
 </div>

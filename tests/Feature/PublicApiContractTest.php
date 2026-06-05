@@ -44,6 +44,8 @@ function messengerPublicApi(): array
         'unsave' => [2, 'void'],
         'saved' => [1, 'Illuminate\Support\Collection'],
         'isSaved' => [2, 'bool'],
+        'react' => [3, '?Syriable\Messenger\Models\MessageReaction'],
+        'reactionsFor' => [2, 'array'],
         'pruneAttachments' => [0, 'Illuminate\Support\Collection'],
     ];
 }

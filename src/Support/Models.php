@@ -5,6 +5,7 @@ namespace Syriable\Messenger\Support;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
 use Syriable\Messenger\Models\MessageAttachment;
+use Syriable\Messenger\Models\MessageReaction;
 use Syriable\Messenger\Models\MessageReport;
 use Syriable\Messenger\Models\Participant;
 use Syriable\Messenger\Models\SavedMessage;
@@ -54,6 +55,12 @@ class Models
         return config('messenger.models.saved', SavedMessage::class);
     }
 
+    /** @return class-string<MessageReaction> */
+    public static function reaction(): string
+    {
+        return config('messenger.models.reaction', MessageReaction::class);
+    }
+
     public static function newConversation(): Conversation
     {
         $class = static::conversation();
@@ -78,6 +85,13 @@ class Models
     public static function newSavedMessage(): SavedMessage
     {
         $class = static::savedMessage();
+
+        return new $class;
+    }
+
+    public static function newReaction(): MessageReaction
+    {
+        $class = static::reaction();
 
         return new $class;
     }

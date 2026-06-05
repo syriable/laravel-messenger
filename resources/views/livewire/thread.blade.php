@@ -76,7 +76,12 @@
                         <x-messenger::date-separator :date="$message['time']" wire:key="sep-{{ $messageDate }}" />
                         @php $separatorDate = $messageDate; @endphp
                     @endif
-                    <x-messenger::message-row :message="$message" :saved="in_array($message['id'], $this->savedIds, true)" wire:key="msg-{{ $message['id'] }}" />
+                    <x-messenger::message-row
+                        :message="$message"
+                        :saved="in_array($message['id'], $this->savedIds, true)"
+                        :reactions="$this->reactionSummaries[$message['id']] ?? []"
+                        wire:key="msg-{{ $message['id'] }}"
+                    />
                 @endforeach
             </div>
 

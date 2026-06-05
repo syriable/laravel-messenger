@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create(config('messenger.tables.reactions', 'messenger_message_reactions'), function (Blueprint $table) {
+            $table->ulid('id')->primary();
+
+            $table->ulid('message_id')->index();
+            // Denormalised so reactions can be scoped/cleaned per conversation.
+            $table->ulid('conversation_id')->index();
+
+            $table->string('participant_type');
+            $table->string('participant_id');
+
+            $table->string('emoji', 16);
+
+            $table->timestamps(6);
+
+            // A participant may react with a given emoji at most once per message;
+            // reacting again with the same emoji toggles it off.
+            $table->unique(['message_id', 'participant_type', 'participant_id', 'emoji'], 'messenger_reaction_unique');
+            $table->index(['participant_type', 'participant_id'], 'messenger_reaction_participant');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(config('messenger.tables.reactions', 'messenger_message_reactions'));
+    }
+};

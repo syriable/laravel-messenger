@@ -3,6 +3,7 @@
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
 use Syriable\Messenger\Models\MessageAttachment;
+use Syriable\Messenger\Models\MessageReaction;
 use Syriable\Messenger\Models\MessageReport;
 use Syriable\Messenger\Models\Participant;
 use Syriable\Messenger\Models\SavedMessage;
@@ -36,6 +37,7 @@ return [
         'attachments' => 'messenger_message_attachments',
         'reports' => 'messenger_message_reports',
         'saved' => 'messenger_saved_messages',
+        'reactions' => 'messenger_message_reactions',
     ],
 
     /*
@@ -55,6 +57,7 @@ return [
         'attachment' => MessageAttachment::class,
         'report' => MessageReport::class,
         'saved' => SavedMessage::class,
+        'reaction' => MessageReaction::class,
     ],
 
     /*
@@ -155,6 +158,20 @@ return [
         // Off by default: reporting is unrestricted to preserve the headless
         // contract — gate it in your application or enable this guard.
         'participants_only' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reactions
+    |--------------------------------------------------------------------------
+    |
+    | The emoji a participant may react to a message with. An empty list allows
+    | any emoji; a non-empty list is enforced by the react action and also drives
+    | the UI picker.
+    |
+    */
+    'reactions' => [
+        'allowed' => ['👍', '❤️', '😂', '😮', '😢', '🙏'],
     ],
 
     /*

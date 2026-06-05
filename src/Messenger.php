@@ -9,6 +9,7 @@ use Syriable\Messenger\Actions\ClearConversationAction;
 use Syriable\Messenger\Actions\MarkConversationAsReadAction;
 use Syriable\Messenger\Actions\MarkConversationAsUnreadAction;
 use Syriable\Messenger\Actions\PruneAttachmentsAction;
+use Syriable\Messenger\Actions\ReactToMessageAction;
 use Syriable\Messenger\Actions\ReportMessageAction;
 use Syriable\Messenger\Actions\SaveMessageAction;
 use Syriable\Messenger\Actions\SendMessageAction;
@@ -18,12 +19,14 @@ use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Data\NewMessage;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
+use Syriable\Messenger\Models\MessageReaction;
 use Syriable\Messenger\Models\MessageReport;
 use Syriable\Messenger\Models\Participant;
 use Syriable\Messenger\Models\SavedMessage;
 use Syriable\Messenger\Queries\FindConversationBetweenQuery;
 use Syriable\Messenger\Queries\GetConversationMessagesQuery;
 use Syriable\Messenger\Queries\GetInboxConversationsQuery;
+use Syriable\Messenger\Queries\GetMessageReactionsQuery;
 use Syriable\Messenger\Queries\GetSavedMessagesQuery;
 use Syriable\Messenger\Queries\GetUnreadCountQuery;
 use Syriable\Messenger\Queries\SearchInboxQuery;
@@ -200,6 +203,27 @@ class Messenger
     public function isSaved(Message $message, MessengerParticipant $participant): bool
     {
         return app(GetSavedMessagesQuery::class)->isSaved($message, $participant);
+    }
+
+    /**
+     * Toggle an emoji reaction on a message. Returns the created reaction, or
+     * null when the reaction was toggled off.
+     */
+    public function react(Message $message, MessengerParticipant $participant, string $emoji): ?MessageReaction
+    {
+        return app(ReactToMessageAction::class)->execute($message, $participant, $emoji);
+    }
+
+    /**
+     * Per-message reaction summaries (emoji, count, viewer-reacted) for a set of
+     * message ids, keyed by message id.
+     *
+     * @param  array<int, string>  $messageIds
+     * @return array<string, array<int, array{emoji: string, count: int, reacted: bool}>>
+     */
+    public function reactionsFor(array $messageIds, MessengerParticipant $viewer): array
+    {
+        return app(GetMessageReactionsQuery::class)->forMessages($messageIds, $viewer);
     }
 
     /**

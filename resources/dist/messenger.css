@@ -551,6 +551,57 @@
     font-weight: 600;
 }
 
+.msgr-message__reactions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--msgr-space-1);
+    margin-block-start: var(--msgr-space-1);
+}
+
+.msgr-reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px var(--msgr-space-2);
+    border: 1px solid var(--msgr-border);
+    border-radius: var(--msgr-radius-round);
+    background: var(--msgr-surface);
+    cursor: pointer;
+    font-size: var(--msgr-text-meta);
+}
+
+.msgr-reaction--on {
+    border-color: var(--msgr-accent);
+    background: color-mix(in srgb, var(--msgr-accent) 12%, transparent);
+}
+
+.msgr-reaction__count {
+    color: var(--msgr-text-muted);
+}
+
+.msgr-reaction-add {
+    position: relative;
+    opacity: 0;
+}
+
+.msgr-message:hover .msgr-reaction-add,
+.msgr-reaction-add:focus-within {
+    opacity: 1;
+}
+
+.msgr-reaction-menu {
+    display: flex;
+    gap: var(--msgr-space-1);
+    min-inline-size: 0;
+    inset-inline-start: 0;
+}
+
+.msgr-reaction-menu button {
+    padding: var(--msgr-space-1);
+    font-size: 18px;
+}
+
 .msgr-message__receipt {
     display: inline-block;
     margin-block-start: var(--msgr-space-1);

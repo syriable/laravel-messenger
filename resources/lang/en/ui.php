@@ -31,6 +31,10 @@ return [
         'read' => 'Read',
     ],
 
+    'reactions' => [
+        'add' => 'Add reaction',
+    ],
+
     'menu' => [
         'conversation' => 'Conversation actions',
         'message' => 'Message actions',

@@ -11,6 +11,7 @@ use Syriable\Messenger\Contracts\CurrentParticipantResolver;
 use Syriable\Messenger\Contracts\MessengerParticipant;
 use Syriable\Messenger\Contracts\ParticipantPresenter;
 use Syriable\Messenger\Contracts\PresenceResolver;
+use Syriable\Messenger\Exceptions\MessengerException;
 use Syriable\Messenger\Facades\Messenger;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
@@ -297,6 +298,51 @@ class Thread extends Component
     public function switchTab(string $tab): void
     {
         $this->tab = in_array($tab, ['messages', 'saved'], true) ? $tab : 'messages';
+    }
+
+    /**
+     * Per-message reaction summaries (emoji, count, viewer-reacted) for the
+     * loaded messages, recomputed each render so toggles stay live.
+     *
+     * @return array<string, array<int, array{emoji: string, count: int, reacted: bool}>>
+     */
+    #[Computed]
+    public function reactionSummaries(): array
+    {
+        $me = $this->participant();
+
+        if (! $me || $this->messages === []) {
+            return [];
+        }
+
+        return Messenger::reactionsFor(array_column($this->messages, 'id'), $me);
+    }
+
+    public function react(string $messageId, string $emoji): void
+    {
+        $me = $this->participant();
+        $conversation = $this->conversationId ? $this->resolveConversation($this->conversationId, $me) : null;
+
+        if (! $conversation || ! $me) {
+            return;
+        }
+
+        $message = Models::message()::query()
+            ->where('conversation_id', $conversation->id)
+            ->whereKey($messageId)
+            ->first();
+
+        if ($message === null) {
+            return;
+        }
+
+        try {
+            Messenger::react($message, $me, $emoji);
+        } catch (MessengerException) {
+            return;
+        }
+
+        unset($this->reactionSummaries);
     }
 
     public function toggleSave(string $messageId): void
