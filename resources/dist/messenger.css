@@ -551,6 +551,17 @@
     font-weight: 600;
 }
 
+.msgr-message__receipt {
+    display: inline-block;
+    margin-block-start: var(--msgr-space-1);
+    font-size: var(--msgr-text-meta);
+    color: var(--msgr-text-muted);
+}
+
+.msgr-message__receipt--read {
+    color: var(--msgr-accent);
+}
+
 .msgr-message__reply {
     margin-block: var(--msgr-space-1);
     padding: var(--msgr-space-1) var(--msgr-space-2);

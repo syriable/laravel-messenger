@@ -25,6 +25,11 @@ return [
         'yesterday' => 'أمس',
     ],
 
+    'receipt' => [
+        'sent' => 'تم الإرسال',
+        'read' => 'تمت القراءة',
+    ],
+
     'menu' => [
         'conversation' => 'إجراءات المحادثة',
         'message' => 'إجراءات الرسالة',

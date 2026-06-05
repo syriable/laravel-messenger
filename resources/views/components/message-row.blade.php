@@ -35,6 +35,12 @@
             <div class="msgr-message__body">{{ $message['body'] }}</div>
         @endif
 
+        @if (! empty($message['status']))
+            <span class="msgr-message__receipt msgr-message__receipt--{{ $message['status'] }}">
+                {{ $message['status'] === 'read' ? __('messenger::ui.receipt.read') : __('messenger::ui.receipt.sent') }}
+            </span>
+        @endif
+
         @if (! empty($message['attachments']))
             <div class="msgr-message__attachments">
                 @foreach ($message['attachments'] as $attachment)

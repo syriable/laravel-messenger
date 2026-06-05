@@ -2,6 +2,7 @@
 
 namespace Syriable\Messenger\Livewire;
 
+use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -94,12 +95,13 @@ class Thread extends Component
         if ($this->messages === []) {
             $this->loadLatest($conversation, $me);
         } else {
+            $otherReadAt = $this->otherReadAt($conversation, $me);
             $new = Messenger::messages($conversation, $me, [
                 'after_id' => $this->messages[array_key_last($this->messages)]['id'],
             ]);
             $this->messages = array_merge(
                 $this->messages,
-                $new->map(fn (Message $message) => $this->toViewModel($message, $me))->all(),
+                $new->map(fn (Message $message) => $this->toViewModel($message, $me, $otherReadAt))->all(),
             );
         }
 
@@ -108,9 +110,10 @@ class Thread extends Component
 
     protected function loadLatest(Conversation $conversation, MessengerParticipant $me): void
     {
+        $otherReadAt = $this->otherReadAt($conversation, $me);
         $page = Messenger::messages($conversation, $me, ['limit' => $this->perPage]);
         $this->hasMoreOlder = $page->count() === $this->perPage;
-        $this->messages = $page->map(fn (Message $message) => $this->toViewModel($message, $me))->all();
+        $this->messages = $page->map(fn (Message $message) => $this->toViewModel($message, $me, $otherReadAt))->all();
     }
 
     public function loadOlder(): void
@@ -132,7 +135,8 @@ class Thread extends Component
         ]);
 
         $this->hasMoreOlder = $older->count() === $this->perPage;
-        $mapped = $older->map(fn (Message $message) => $this->toViewModel($message, $me))->all();
+        $otherReadAt = $this->otherReadAt($conversation, $me);
+        $mapped = $older->map(fn (Message $message) => $this->toViewModel($message, $me, $otherReadAt))->all();
         $this->messages = array_merge($mapped, $this->messages);
     }
 
@@ -383,7 +387,7 @@ class Thread extends Component
     /**
      * @return array<string, mixed>
      */
-    protected function toViewModel(Message $message, MessengerParticipant $me): array
+    protected function toViewModel(Message $message, MessengerParticipant $me, ?CarbonInterface $otherReadAt = null): array
     {
         $presenter = app(ParticipantPresenter::class);
         $sender = $message->sender;
@@ -392,11 +396,19 @@ class Thread extends Component
         $isSelf = $message->sender_type === $me->getMorphClass()
             && (string) $message->sender_id === (string) $me->getKey();
 
+        // Read status only applies to the viewer's own messages: "read" once the
+        // recipient's last_read_at reaches the message, otherwise "sent".
+        $status = null;
+        if ($isSelf) {
+            $status = ($otherReadAt !== null && $message->created_at <= $otherReadAt) ? 'read' : 'sent';
+        }
+
         return [
             'id' => $message->id,
             'body' => $message->body,
             'time' => $message->created_at,
             'is_self' => $isSelf,
+            'status' => $status,
             'sender_name' => $sender ? $presenter->displayName($sender) : __('messenger::ui.unknown_participant'),
             'sender_avatar' => $sender ? $presenter->avatarUrl($sender) : null,
             'reply_to' => $this->replyViewModel($message),
@@ -406,6 +418,14 @@ class Thread extends Component
                 'is_image' => str_starts_with((string) $attachment->mime_type, 'image/'),
             ])->all(),
         ];
+    }
+
+    /**
+     * The other participant's last-read timestamp, for read-receipt rendering.
+     */
+    protected function otherReadAt(Conversation $conversation, MessengerParticipant $me): ?CarbonInterface
+    {
+        return $conversation->otherParticipantFor($me)?->last_read_at;
     }
 
     /**

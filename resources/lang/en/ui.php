@@ -26,6 +26,11 @@ return [
         'yesterday' => 'Yesterday',
     ],
 
+    'receipt' => [
+        'sent' => 'Sent',
+        'read' => 'Read',
+    ],
+
     'menu' => [
         'conversation' => 'Conversation actions',
         'message' => 'Message actions',
