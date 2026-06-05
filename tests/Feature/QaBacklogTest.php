@@ -93,9 +93,8 @@ it('truncates an over-length attachment filename, preserving the extension', fun
         ->and($name)->toEndWith('.pdf');
 });
 
-// Issue #54 — optional recipient/sender existence check.
-it('rejects a non-persisted (ghost) participant when verification is enabled', function () {
-    config()->set('messenger.validation.verify_participants_exist', true);
+// Issue #54 — recipient/sender existence check (on by default after remediation).
+it('rejects a non-persisted (ghost) participant by default', function () {
     $alice = User::factory()->create();
 
     $ghost = new User(['name' => 'Ghost']);
@@ -104,16 +103,18 @@ it('rejects a non-persisted (ghost) participant when verification is enabled', f
     Messenger::send($alice, $ghost, 'hi');
 })->throws(InvalidParticipantException::class);
 
-it('allows a ghost participant when verification is disabled (default)', function () {
+it('allows a ghost participant when verification is explicitly disabled', function () {
+    config()->set('messenger.validation.verify_participants_exist', false);
     $alice = User::factory()->create();
-    $bob = User::factory()->create();
 
-    expect(Messenger::send($alice, $bob, 'hi')->body)->toBe('hi');
+    $ghost = new User(['name' => 'Ghost']);
+    $ghost->id = 999999;
+
+    expect(Messenger::send($alice, $ghost, 'hi')->body)->toBe('hi');
 });
 
-// Issue #57 — optional participant-only reporting.
-it('rejects a report from a non-participant when participants_only is enabled', function () {
-    config()->set('messenger.reports.participants_only', true);
+// Issue #57 — participant-only reporting (on by default after remediation).
+it('rejects a report from a non-participant by default', function () {
     $alice = User::factory()->create();
     $bob = User::factory()->create();
     $eve = User::factory()->create();
@@ -123,8 +124,7 @@ it('rejects a report from a non-participant when participants_only is enabled', 
     Messenger::report($message, $eve);
 })->throws(InvalidReportException::class);
 
-it('allows a participant to report when participants_only is enabled', function () {
-    config()->set('messenger.reports.participants_only', true);
+it('allows a participant to report by default', function () {
     $alice = User::factory()->create();
     $bob = User::factory()->create();
 
@@ -133,7 +133,8 @@ it('allows a participant to report when participants_only is enabled', function 
     expect(Messenger::report($message, $bob)->message_id)->toBe($message->getKey());
 });
 
-it('allows any reporter by default', function () {
+it('allows any reporter when participants_only is explicitly disabled', function () {
+    config()->set('messenger.reports.participants_only', false);
     $alice = User::factory()->create();
     $bob = User::factory()->create();
     $eve = User::factory()->create();

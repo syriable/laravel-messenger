@@ -27,7 +27,15 @@ class Conversation extends Model
     use HasPreciseTimestamps;
     use HasUlids;
 
-    protected $guarded = [];
+    /**
+     * Only the deterministic conversation key may be mass-assigned. The
+     * denormalised projection columns (`last_message_id`, `last_message_at`) are
+     * written exclusively through the package actions via `forceFill()`, never
+     * from request input, so they are deliberately not fillable (#audit S1).
+     *
+     * @var list<string>
+     */
+    protected $fillable = ['key'];
 
     protected $casts = [
         'last_message_at' => 'datetime',

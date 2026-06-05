@@ -61,6 +61,12 @@ return [
     */
     'messages' => [
         'max_body_length' => 20000,
+        // Hard ceiling on how many messages a single `Messenger::messages()`
+        // read returns. When set to an integer it caps any provided `limit` AND
+        // turns an absent limit into a bounded page, so a production endpoint can
+        // never load an entire conversation history into memory by omitting it.
+        // null = no ceiling (unbounded reads allowed); set this in production.
+        'max_read_limit' => null,
     ],
 
     /*
@@ -75,10 +81,11 @@ return [
     'reports' => [
         'max_reason_length' => 255,
         'max_note_length' => 2000,
-        // When true, only conversation participants may report a message.
-        // Off by default: reporting is unrestricted to preserve the headless
-        // contract — gate it in your application or enable this guard.
-        'participants_only' => false,
+        // When true, only conversation participants may report a message. On by
+        // default as a safe baseline against abuse: an identity outside the
+        // conversation cannot report its messages. Set to false to restore the
+        // fully headless contract and authorise reporting in your application.
+        'participants_only' => true,
     ],
 
     /*
@@ -93,8 +100,11 @@ return [
     'validation' => [
         // When true, the send pipeline rejects a sender/recipient that does not
         // exist in the database, preventing "ghost" participant rows whose
-        // morphTo accessors would later resolve to null.
-        'verify_participants_exist' => false,
+        // morphTo accessors would later resolve to null. On by default as a
+        // safe baseline: it costs two indexed existence checks per first send.
+        // Set to false if your host already guarantees participants exist and
+        // you want to skip the lookups.
+        'verify_participants_exist' => true,
     ],
 
     /*
@@ -131,6 +141,16 @@ return [
             'application/zip',
             'application/x-zip-compressed',
         ],
+        // When true, EnsureAttachmentsAreValid also checks the SERVER-detected
+        // mime type (Symfony's content sniff via fileinfo), not just the
+        // client-reported one, against `allowed_mimes` — catching a file whose
+        // real content does not match its claimed type/extension. Off by default
+        // because content sniffing depends on the `fileinfo` extension and can
+        // reject legitimate-but-unusual files; turn it on for untrusted uploads.
+        'verify_real_mime' => false,
+        // Deep content inspection / malware scanning is out of scope for the
+        // built-in pipe. Add your own SendPipe (see README) to plug in a
+        // virus scanner or archive-bomb check for fully untrusted input.
     ],
 
     /*

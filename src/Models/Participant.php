@@ -33,7 +33,20 @@ class Participant extends Model
     use HasPreciseTimestamps;
     use HasUlids;
 
-    protected $guarded = [];
+    /**
+     * Only the identity columns may be mass-assigned. All participant-specific
+     * state (`unread_count`, `blocked_at`, `spammed_at`, `archived_at`,
+     * `starred_at`, `cleared_at`, `last_read_at`) is mutated exclusively through
+     * the package actions via `forceFill()` / `increment()`, never from request
+     * input, so it is deliberately not fillable to prevent tampering (#audit S1).
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'conversation_id',
+        'participant_type',
+        'participant_id',
+    ];
 
     protected $casts = [
         'archived_at' => 'datetime',
