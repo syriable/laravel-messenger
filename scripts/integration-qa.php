@@ -63,7 +63,7 @@ qa_assert('broadcastAs is message.sent', $broadcast->broadcastAs() === 'message.
 qa_assert('broadcast channel uses the configured prefix',
     str_contains($channel->name, 'messenger.conversation.'));
 qa_assert('broadcast payload has the documented keys',
-    array_keys($broadcast->broadcastWith()) === ['id', 'conversation_id', 'sender_type', 'sender_id', 'body', 'reply_to_id', 'created_at']);
+    array_keys($broadcast->broadcastWith()) === ['id', 'conversation_id', 'sender_type', 'sender_id', 'body', 'reply_to_id', 'created_at', 'has_attachments', 'attachments']);
 
 // 6. Attachments + prune.
 $withFile = Messenger::send($user, $agent, ['attachments' => [UploadedFile::fake()->image('a.jpg')]]);
