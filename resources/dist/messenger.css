@@ -493,6 +493,20 @@
     font-size: var(--msgr-text-meta);
 }
 
+.msgr-date-sep {
+    display: flex;
+    justify-content: center;
+    margin-block: var(--msgr-space-3);
+}
+
+.msgr-date-sep span {
+    padding: 2px var(--msgr-space-3);
+    border-radius: var(--msgr-radius-round);
+    background: var(--msgr-surface-muted);
+    color: var(--msgr-text-muted);
+    font-size: var(--msgr-text-meta);
+}
+
 .msgr-thread__typing {
     padding: 0 var(--msgr-space-4) var(--msgr-space-2);
     color: var(--msgr-text-muted);

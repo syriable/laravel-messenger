@@ -20,6 +20,11 @@ return [
     'last_seen' => 'آخر ظهور :time',
     'typing' => ':name يكتب الآن…',
 
+    'date' => [
+        'today' => 'اليوم',
+        'yesterday' => 'أمس',
+    ],
+
     'menu' => [
         'conversation' => 'إجراءات المحادثة',
         'message' => 'إجراءات الرسالة',

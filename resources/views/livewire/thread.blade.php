@@ -69,7 +69,13 @@
                     </div>
                 @endif
 
+                @php $separatorDate = null; @endphp
                 @foreach ($messages as $message)
+                    @php $messageDate = \Illuminate\Support\Carbon::parse($message['time'])->toDateString(); @endphp
+                    @if ($messageDate !== $separatorDate)
+                        <x-messenger::date-separator :date="$message['time']" wire:key="sep-{{ $messageDate }}" />
+                        @php $separatorDate = $messageDate; @endphp
+                    @endif
                     <x-messenger::message-row :message="$message" :saved="in_array($message['id'], $this->savedIds, true)" wire:key="msg-{{ $message['id'] }}" />
                 @endforeach
             </div>

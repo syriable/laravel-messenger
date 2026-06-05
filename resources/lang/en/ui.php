@@ -21,6 +21,11 @@ return [
     'last_seen' => 'Last seen :time',
     'typing' => ':name is typing…',
 
+    'date' => [
+        'today' => 'Today',
+        'yesterday' => 'Yesterday',
+    ],
+
     'menu' => [
         'conversation' => 'Conversation actions',
         'message' => 'Message actions',

@@ -141,6 +141,18 @@ it('appends new messages on the message-sent event', function () {
         ->assertSee('second');
 });
 
+it('renders a date separator above the messages', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    Messenger::send($alice, $me, 'hello today');
+    $conversation = Messenger::between($me, $alice);
+
+    Livewire::actingAs($me)
+        ->test(Thread::class, ['conversationId' => $conversation->id])
+        ->assertSee(__('messenger::ui.date.today'))
+        ->assertSee('hello today');
+});
+
 it('shows the other participant presence in the header', function () {
     config()->set('messenger.ui.presence_resolver', FakeOnlinePresenceResolver::class);
 
