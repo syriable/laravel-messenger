@@ -40,11 +40,19 @@ class PruneAttachmentsAction
             return collect();
         }
 
-        // Known paths for this disk, kept as a lookup set to avoid N queries.
-        $knownPaths = Models::attachment()::query()
+        // Stream known paths for this disk in chunks and build a lookup set,
+        // instead of pulling the entire `path` column into memory in one go, so
+        // the prune scales to large attachment tables (#audit P3).
+        $knownPaths = collect();
+
+        Models::attachment()::query()
             ->where('disk', $disk)
-            ->pluck('path')
-            ->flip();
+            ->select('path')
+            ->chunk(1000, function ($rows) use ($knownPaths): void {
+                foreach ($rows as $row) {
+                    $knownPaths->put($row->path, true);
+                }
+            });
 
         $orphans = $filesOnDisk->reject(fn (string $path) => $knownPaths->has($path))->values();
 

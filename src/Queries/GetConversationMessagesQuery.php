@@ -46,7 +46,14 @@ class GetConversationMessagesQuery
             throw InvalidParticipantException::notInConversation();
         }
 
-        $limit = Limit::normalize($options['limit'] ?? null);
+        // A configurable hard ceiling (messenger.messages.max_read_limit) caps
+        // the page size and turns an absent limit into a bounded read, so a
+        // production endpoint can never hydrate an entire conversation history
+        // by omitting `limit` (#audit P1).
+        $limit = Limit::normalize(
+            $options['limit'] ?? null,
+            config('messenger.messages.max_read_limit'),
+        );
 
         $beforeId = $options['before_id'] ?? null;
         $afterId = $options['after_id'] ?? null;
