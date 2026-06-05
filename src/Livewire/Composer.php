@@ -41,10 +41,20 @@ class Composer extends Component
 
     public int $maxLength = 20000;
 
+    /** When true, Enter sends and Shift+Enter inserts a newline (else inverted). */
+    public bool $enterToSend = true;
+
     public function mount(?string $conversationId = null): void
     {
         $this->maxLength = (int) (config('messenger.messages.max_body_length') ?? 20000);
+        $this->enterToSend = (bool) session('messenger.enter_to_send', config('messenger.ui.enter_to_send', true));
         $this->conversationId = $conversationId;
+    }
+
+    public function setEnterToSend(bool $value): void
+    {
+        $this->enterToSend = $value;
+        session()->put('messenger.enter_to_send', $value);
     }
 
     #[On('conversation-selected')]

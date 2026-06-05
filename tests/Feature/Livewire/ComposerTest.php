@@ -119,6 +119,25 @@ it('sends a message with an image attachment', function () {
     expect(Messenger::messages($conversation, $me)->last()->hasAttachments())->toBeTrue();
 });
 
+it('toggles and persists the Enter-to-send preference', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    $conversation = composerConversation($me, $alice);
+
+    Livewire::actingAs($me)
+        ->test(Composer::class, ['conversationId' => $conversation->id])
+        ->assertSet('enterToSend', true)
+        ->call('setEnterToSend', false)
+        ->assertSet('enterToSend', false);
+
+    expect(session('messenger.enter_to_send'))->toBeFalse();
+
+    // A freshly mounted composer restores the saved preference.
+    Livewire::actingAs($me)
+        ->test(Composer::class, ['conversationId' => $conversation->id])
+        ->assertSet('enterToSend', false);
+});
+
 it('removes a staged attachment', function () {
     Storage::fake(config('messenger.attachments.disk'));
 

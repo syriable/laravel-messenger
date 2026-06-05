@@ -636,6 +636,15 @@
     cursor: default;
 }
 
+.msgr-composer__enter {
+    position: relative;
+}
+
+.msgr-menu__active {
+    font-weight: 700;
+    color: var(--msgr-accent);
+}
+
 .msgr-composer__locked {
     color: var(--msgr-text-muted);
     text-align: center;

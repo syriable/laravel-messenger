@@ -112,6 +112,10 @@ return [
         'theme' => 'neutral',
         'message_style' => 'flat',
 
+        // Default composer behaviour: true = Enter sends (Shift+Enter = newline);
+        // false = Enter = newline (Ctrl/Cmd+Enter sends). Users can toggle it.
+        'enter_to_send' => true,
+
         // Messages loaded per infinite-scroll page (keyset pagination).
         'per_page' => 30,
 

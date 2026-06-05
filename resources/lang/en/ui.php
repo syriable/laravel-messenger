@@ -66,6 +66,9 @@ return [
         'locked' => 'You can no longer send messages in this conversation.',
         'replying' => 'Replying to a message',
         'cancel_reply' => 'Cancel reply',
+        'enter_behaviour' => 'Enter key behaviour',
+        'enter_send' => 'Enter sends · Shift+Enter for a new line',
+        'enter_newline' => 'Enter for a new line · Ctrl/⌘+Enter sends',
     ],
 
     'filter' => [

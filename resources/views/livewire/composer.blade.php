@@ -32,9 +32,13 @@
                     maxlength="{{ $maxLength }}"
                     placeholder="{{ __('messenger::ui.composer.placeholder') }}"
                     aria-label="{{ __('messenger::ui.composer.placeholder') }}"
+                    x-data
+                    x-on:keydown.enter="
+                        if ($wire.enterToSend && ! $event.shiftKey) { $event.preventDefault(); $wire.send(); }
+                        else if (! $wire.enterToSend && ($event.metaKey || $event.ctrlKey)) { $event.preventDefault(); $wire.send(); }
+                    "
                     @if (config('messenger.broadcasting.enabled'))
                         @php $channel = config('messenger.broadcasting.channel_prefix', 'messenger').'.conversation.'.$conversationId; @endphp
-                        x-data
                         x-on:input.throttle.2000ms="window.Echo && window.Echo.{{ config('messenger.broadcasting.private', true) ? 'private' : 'channel' }}(@js($channel)).whisper('typing', {})"
                     @endif
                 ></textarea>
@@ -44,6 +48,18 @@
                     <input type="file" wire:model="attachments" multiple hidden>
                     <span class="msgr-sr-only">{{ __('messenger::ui.composer.attach') }}</span>
                 </label>
+
+                <div class="msgr-composer__enter" x-data="{ open: false }">
+                    <button type="button" class="msgr-iconbtn" @click="open = ! open" :aria-expanded="open" aria-haspopup="menu" aria-label="{{ __('messenger::ui.composer.enter_behaviour') }}">&dtrif;</button>
+                    <div class="msgr-menu" role="menu" x-show="open" x-cloak @click.outside="open = false">
+                        <button type="button" role="menuitemradio" :aria-checked="@js($enterToSend)" wire:click="setEnterToSend(true)" @click="open = false" @class(['msgr-menu__active' => $enterToSend])>
+                            {{ __('messenger::ui.composer.enter_send') }}
+                        </button>
+                        <button type="button" role="menuitemradio" :aria-checked="@js(! $enterToSend)" wire:click="setEnterToSend(false)" @click="open = false" @class(['msgr-menu__active' => ! $enterToSend])>
+                            {{ __('messenger::ui.composer.enter_newline') }}
+                        </button>
+                    </div>
+                </div>
 
                 <button type="submit" class="msgr-composer__send" wire:loading.attr="disabled">
                     {{ __('messenger::ui.composer.send') }}

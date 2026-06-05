@@ -65,6 +65,9 @@ return [
         'locked' => 'لم يعد بإمكانك إرسال رسائل في هذه المحادثة.',
         'replying' => 'رد على رسالة',
         'cancel_reply' => 'إلغاء الرد',
+        'enter_behaviour' => 'سلوك مفتاح Enter',
+        'enter_send' => 'Enter للإرسال · Shift+Enter لسطر جديد',
+        'enter_newline' => 'Enter لسطر جديد · Ctrl/⌘+Enter للإرسال',
     ],
 
     'filter' => [
