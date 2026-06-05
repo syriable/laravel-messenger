@@ -17,6 +17,7 @@ use Syriable\Messenger\Events\ConversationRead;
 use Syriable\Messenger\Events\MessageSent;
 use Syriable\Messenger\Listeners\BroadcastConversationRead;
 use Syriable\Messenger\Listeners\BroadcastMessageSent;
+use Syriable\Messenger\Listeners\NotifyRecipient;
 use Syriable\Messenger\Livewire\Composer;
 use Syriable\Messenger\Livewire\Messenger as MessengerComponent;
 use Syriable\Messenger\Livewire\Sidebar;
@@ -117,6 +118,10 @@ class MessengerServiceProvider extends PackageServiceProvider
         if (config('messenger.broadcasting.enabled', false)) {
             Event::listen(MessageSent::class, BroadcastMessageSent::class);
             Event::listen(ConversationRead::class, BroadcastConversationRead::class);
+        }
+
+        if (config('messenger.notifications.enabled', false)) {
+            Event::listen(MessageSent::class, NotifyRecipient::class);
         }
     }
 

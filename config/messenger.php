@@ -176,6 +176,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    |
+    | Opt-in: when enabled, a listener notifies the recipient of each new message
+    | via the configured channels. A recipient model may opt out per message by
+    | implementing shouldReceiveMessengerNotification(Message): bool (mute is a
+    | host concern). Disabled by default to preserve the headless contract.
+    |
+    */
+    'notifications' => [
+        'enabled' => false,
+        'channels' => ['database'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Validation guards
     |--------------------------------------------------------------------------
     |
