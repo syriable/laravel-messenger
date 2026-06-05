@@ -258,6 +258,19 @@ The allowed emoji set (also used by the picker) is configurable:
 Read status (Sent / Read) is derived from the recipient's `last_read_at` — no
 new state. Presence (online / last-seen) comes from your `PresenceResolver`.
 
+### Notifications (opt-in)
+
+Off by default. Enable to notify the recipient of each new message:
+
+```php
+'notifications' => ['enabled' => true, 'channels' => ['database', 'mail']],
+```
+
+A `NotifyRecipient` listener sends `NewMessageNotification` to the recipient
+(any Notifiable model). Muting is host-owned: a recipient may opt out per message
+by implementing `shouldReceiveMessengerNotification(Message $message): bool`.
+Extend the notification/listener for richer mail formatting or queueing.
+
 ### New events
 
 `MessageSaved` / `MessageUnsaved`, `MessageReacted` / `MessageUnreacted`, and the
