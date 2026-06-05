@@ -18,6 +18,8 @@ return [
     'unknown_participant' => 'Unknown',
     'load_earlier' => 'Load earlier messages',
     'attachment' => 'Attachment',
+    'new_messages' => '{1} :count new message|[2,*] :count new messages',
+    'scroll_to_bottom' => 'Scroll to latest',
     'last_seen' => 'Last seen :time',
     'typing' => ':name is typing…',
 

@@ -3,6 +3,7 @@
 namespace Syriable\Messenger\Livewire;
 
 use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -15,6 +16,7 @@ use Syriable\Messenger\Exceptions\MessengerException;
 use Syriable\Messenger\Facades\Messenger;
 use Syriable\Messenger\Models\Conversation;
 use Syriable\Messenger\Models\Message;
+use Syriable\Messenger\Models\Participant;
 use Syriable\Messenger\Support\Models;
 
 /**
@@ -44,6 +46,11 @@ class Thread extends Component
     /** Active tab: "messages" | "saved". */
     public string $tab = 'messages';
 
+    /** Id of the first unread message, for the "new messages" divider. */
+    public ?string $newDividerBeforeId = null;
+
+    public int $newDividerCount = 0;
+
     public function mount(?string $conversationId = null): void
     {
         $this->perPage = (int) config('messenger.ui.per_page', 30);
@@ -68,10 +75,43 @@ class Thread extends Component
         }
 
         $this->conversationId = $conversation->id;
+        // Capture the unread boundary BEFORE marking read, so the divider lands
+        // above the first message received since the participant last read.
+        $mine = $conversation->participantFor($me);
         $this->loadLatest($conversation, $me);
+        $this->computeUnreadDivider($mine);
 
         Messenger::markAsRead($conversation, $me);
         $this->dispatch('conversation-read', conversationId: $conversation->id);
+    }
+
+    /**
+     * Position the "new messages" divider before the first inbound message that
+     * arrived after the participant's previous read point.
+     */
+    protected function computeUnreadDivider(Participant $mine): void
+    {
+        $this->newDividerBeforeId = null;
+        $this->newDividerCount = 0;
+
+        $count = (int) $mine->unread_count;
+
+        if ($count === 0) {
+            return;
+        }
+
+        $boundary = $mine->last_read_at;
+
+        foreach ($this->messages as $message) {
+            $newerThanBoundary = $boundary === null || Carbon::parse($message['time']) > $boundary;
+
+            if (! ($message['is_self'] ?? false) && $newerThanBoundary) {
+                $this->newDividerBeforeId = $message['id'];
+                $this->newDividerCount = $count;
+
+                return;
+            }
+        }
     }
 
     /**
@@ -100,10 +140,14 @@ class Thread extends Component
             $new = Messenger::messages($conversation, $me, [
                 'after_id' => $this->messages[array_key_last($this->messages)]['id'],
             ]);
-            $this->messages = array_merge(
-                $this->messages,
-                $new->map(fn (Message $message) => $this->toViewModel($message, $me, $otherReadAt))->all(),
-            );
+            $appended = $new->map(fn (Message $message) => $this->toViewModel($message, $me, $otherReadAt))->all();
+            $this->messages = array_merge($this->messages, $appended);
+
+            if ($appended !== []) {
+                // Signal the scroll handler to auto-scroll (if at bottom) or
+                // bump the "new messages below" badge on the scroll-to-bottom FAB.
+                $this->dispatch('messages-appended');
+            }
         }
 
         Messenger::markAsRead($conversation, $me);

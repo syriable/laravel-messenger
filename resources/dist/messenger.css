@@ -514,10 +514,70 @@
     font-style: italic;
 }
 
+.msgr-thread__scroll {
+    position: relative;
+    flex: 1 1 auto;
+    min-block-size: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 .msgr-thread__messages {
     flex: 1 1 auto;
     overflow-y: auto;
     padding: var(--msgr-space-4);
+}
+
+.msgr-unread-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    gap: var(--msgr-space-2);
+    margin-block: var(--msgr-space-3);
+    color: var(--msgr-unread);
+    font-size: var(--msgr-text-meta);
+    font-weight: 600;
+}
+
+.msgr-unread-divider::before,
+.msgr-unread-divider::after {
+    content: '';
+    flex: 1 1 auto;
+    border-block-start: 1px solid color-mix(in srgb, var(--msgr-unread) 40%, transparent);
+}
+
+.msgr-thread__fab {
+    position: absolute;
+    inset-block-end: var(--msgr-space-4);
+    inset-inline-end: var(--msgr-space-4);
+    inline-size: 40px;
+    block-size: 40px;
+    border-radius: var(--msgr-radius-round);
+    border: 1px solid var(--msgr-border);
+    background: var(--msgr-surface);
+    color: var(--msgr-text);
+    box-shadow: var(--msgr-shadow-menu);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.msgr-thread__fab-count {
+    position: absolute;
+    inset-block-start: -6px;
+    inset-inline-end: -6px;
+    min-inline-size: 18px;
+    block-size: 18px;
+    padding: 0 5px;
+    border-radius: var(--msgr-radius-round);
+    background: var(--msgr-unread);
+    color: var(--msgr-text-inverse);
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .msgr-thread__more {

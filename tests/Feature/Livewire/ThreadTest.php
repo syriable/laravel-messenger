@@ -141,6 +141,50 @@ it('appends new messages on the message-sent event', function () {
         ->assertSee('second');
 });
 
+it('places the unread divider before the first unread message', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+
+    $base = now()->subMinutes(5);
+    threadSendAt($alice, $me, 'unread one', $base->copy());
+    threadSendAt($alice, $me, 'unread two', $base->copy()->addMinute());
+    $conversation = Messenger::between($me, $alice);
+
+    $first = Messenger::messages($conversation, $me)->first();
+
+    Livewire::actingAs($me)
+        ->test(Thread::class, ['conversationId' => $conversation->id])
+        ->assertSet('newDividerBeforeId', $first->id)
+        ->assertSet('newDividerCount', 2)
+        ->assertSee(trans_choice('messenger::ui.new_messages', 2, ['count' => 2]));
+});
+
+it('shows no unread divider when nothing is unread', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    threadSendAt($me, $alice, 'i sent this', now()->subMinute());
+    $conversation = Messenger::between($me, $alice);
+
+    Livewire::actingAs($me)
+        ->test(Thread::class, ['conversationId' => $conversation->id])
+        ->assertSet('newDividerBeforeId', null);
+});
+
+it('signals messages-appended when new messages arrive', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    threadSendAt($alice, $me, 'first', now()->subMinutes(2));
+    $conversation = Messenger::between($me, $alice);
+
+    $component = Livewire::actingAs($me)
+        ->test(Thread::class, ['conversationId' => $conversation->id]);
+
+    threadSendAt($alice, $me, 'second', now()->subMinute());
+
+    $component->dispatch('message-sent', conversationId: $conversation->id)
+        ->assertDispatched('messages-appended');
+});
+
 it('renders a date separator above the messages', function () {
     $me = User::factory()->create(['name' => 'Me']);
     $alice = User::factory()->create(['name' => 'Alice']);

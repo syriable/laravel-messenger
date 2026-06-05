@@ -17,6 +17,8 @@ return [
     'unknown_participant' => 'غير معروف',
     'load_earlier' => 'تحميل الرسائل الأقدم',
     'attachment' => 'مرفق',
+    'new_messages' => '{1} رسالة جديدة|[2,*] :count رسائل جديدة',
+    'scroll_to_bottom' => 'الانتقال إلى الأحدث',
     'last_seen' => 'آخر ظهور :time',
     'typing' => ':name يكتب الآن…',
 
