@@ -43,6 +43,17 @@
                     @endif
                 ></textarea>
 
+                @if (config('messenger.ui.emoji'))
+                    <div class="msgr-composer__emoji" x-data="{ open: false }">
+                        <button type="button" class="msgr-iconbtn" @click="open = ! open" :aria-expanded="open" aria-haspopup="menu" aria-label="{{ __('messenger::ui.composer.emoji') }}">🙂</button>
+                        <div class="msgr-menu msgr-emoji-menu" role="menu" x-show="open" x-cloak @click.outside="open = false">
+                            @foreach (config('messenger.ui.emoji', []) as $emoji)
+                                <button type="button" wire:click.prevent="insertEmoji(@js($emoji))">{{ $emoji }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 <label class="msgr-composer__attach" title="{{ __('messenger::ui.composer.attach') }}">
                     <span aria-hidden="true">📎</span>
                     <input type="file" wire:model="attachments" multiple hidden>

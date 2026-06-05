@@ -91,6 +91,11 @@ class Composer extends Component
         $this->attachments = array_values($this->attachments);
     }
 
+    public function insertEmoji(string $emoji): void
+    {
+        $this->body .= $emoji;
+    }
+
     public function send(): void
     {
         $me = $this->participant();

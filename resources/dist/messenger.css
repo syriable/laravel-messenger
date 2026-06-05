@@ -758,8 +758,23 @@
     cursor: default;
 }
 
-.msgr-composer__enter {
+.msgr-composer__enter,
+.msgr-composer__emoji {
     position: relative;
+}
+
+.msgr-emoji-menu {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    inset-block-end: 100%;
+    inset-inline-start: 0;
+    max-inline-size: 280px;
+}
+
+.msgr-emoji-menu button {
+    padding: var(--msgr-space-1);
+    font-size: 18px;
 }
 
 .msgr-menu__active {

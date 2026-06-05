@@ -22,6 +22,7 @@
                         {{ $this->state['starred'] ? __('messenger::ui.unstar') : __('messenger::ui.star') }}
                     </button>
                     <button type="button" role="menuitem" wire:click="markUnread" @click="open = false">{{ __('messenger::ui.menu.mark_unread') }}</button>
+                    <button type="button" role="menuitem" x-on:click="$wire.dispatch('message-style-toggle'); open = false">{{ __('messenger::ui.menu.toggle_style') }}</button>
                     <button type="button" role="menuitem" wire:click="toggleArchive" @click="open = false">
                         {{ $this->state['archived'] ? __('messenger::ui.menu.unarchive') : __('messenger::ui.menu.archive') }}
                     </button>

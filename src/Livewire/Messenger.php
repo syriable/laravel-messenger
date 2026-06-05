@@ -20,17 +20,29 @@ class Messenger extends Component
     #[Url(as: 'c', history: true)]
     public ?string $conversation = null;
 
+    /** Message display style: "flat" | "bubble" (user-toggleable, persisted). */
+    public string $messageStyle = 'flat';
+
     public function mount(?string $conversation = null): void
     {
         if ($conversation !== null) {
             $this->conversation = $conversation;
         }
+
+        $this->messageStyle = (string) session('messenger.message_style', config('messenger.ui.message_style', 'flat'));
     }
 
     #[On('conversation-selected')]
     public function onConversationSelected(string $conversationId): void
     {
         $this->conversation = $conversationId;
+    }
+
+    #[On('message-style-toggle')]
+    public function toggleMessageStyle(): void
+    {
+        $this->messageStyle = $this->messageStyle === 'bubble' ? 'flat' : 'bubble';
+        session()->put('messenger.message_style', $this->messageStyle);
     }
 
     public function render()

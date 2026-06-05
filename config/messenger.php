@@ -119,6 +119,9 @@ return [
         // false = Enter = newline (Ctrl/Cmd+Enter sends). Users can toggle it.
         'enter_to_send' => true,
 
+        // The emoji offered by the composer's emoji picker.
+        'emoji' => ['😀', '😁', '😂', '🤣', '😊', '😍', '😘', '😎', '🤔', '😢', '😭', '😡', '👍', '👎', '🙏', '🎉', '❤️', '🔥', '💯', '✅'],
+
         // Messages loaded per infinite-scroll page (keyset pagination).
         'per_page' => 30,
 

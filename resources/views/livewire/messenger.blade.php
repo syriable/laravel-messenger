@@ -1,5 +1,5 @@
 <div class="msgr-root" style="block-size: 100%;">
-    <x-messenger::shell :has-selection="filled($conversation)">
+    <x-messenger::shell :has-selection="filled($conversation)" :style="$messageStyle">
         <x-slot:rail>
             <livewire:messenger.sidebar :active-conversation-id="$conversation" />
         </x-slot:rail>

@@ -119,6 +119,20 @@ it('sends a message with an image attachment', function () {
     expect(Messenger::messages($conversation, $me)->last()->hasAttachments())->toBeTrue();
 });
 
+it('inserts an emoji into the body at the end', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+    $alice = User::factory()->create(['name' => 'Alice']);
+    $conversation = composerConversation($me, $alice);
+
+    Livewire::actingAs($me)
+        ->test(Composer::class, ['conversationId' => $conversation->id])
+        ->set('body', 'hi ')
+        ->call('insertEmoji', '😀')
+        ->assertSet('body', 'hi 😀')
+        ->call('insertEmoji', '🎉')
+        ->assertSet('body', 'hi 😀🎉');
+});
+
 it('toggles and persists the Enter-to-send preference', function () {
     $me = User::factory()->create(['name' => 'Me']);
     $alice = User::factory()->create(['name' => 'Alice']);

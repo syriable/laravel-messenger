@@ -49,6 +49,23 @@ it('accepts a conversation via mount for deep-linking', function () {
         ->assertSeeLivewire(Thread::class);
 });
 
+it('toggles and persists the message style', function () {
+    $me = User::factory()->create(['name' => 'Me']);
+
+    Livewire::actingAs($me)
+        ->test(MessengerPage::class)
+        ->assertSet('messageStyle', 'flat')
+        ->dispatch('message-style-toggle')
+        ->assertSet('messageStyle', 'bubble');
+
+    expect(session('messenger.message_style'))->toBe('bubble');
+
+    // A freshly mounted root restores the saved preference.
+    Livewire::actingAs($me)
+        ->test(MessengerPage::class)
+        ->assertSet('messageStyle', 'bubble');
+});
+
 it('registers the full-page messenger route', function () {
     expect(Route::has('messenger.index'))->toBeTrue();
 });
