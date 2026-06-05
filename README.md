@@ -33,7 +33,17 @@ composer require syriable/laravel-messenger
 ```
 
 Publishing the migrations is **required** — the package ships them as
-customisable stubs and does not run them automatically. Publish, then migrate:
+customisable stubs and does not run them automatically. The quickest path is the
+bundled installer, which publishes the stubs (and optionally the config) and can
+run the migration in one step:
+
+```bash
+php artisan messenger:install            # publish migrations, then prompts you to migrate
+php artisan messenger:install --config   # also publish config/messenger.php
+php artisan messenger:install --migrate  # publish and migrate in one go
+```
+
+Or do it manually — publish, then migrate:
 
 ```bash
 php artisan vendor:publish --tag="messenger-migrations"
@@ -45,6 +55,9 @@ Optionally publish the config file:
 ```bash
 php artisan vendor:publish --tag="messenger-config"
 ```
+
+> Need to detect a missing-migration state at boot in your host app? Call
+> `Syriable\Messenger\Commands\InstallCommand::tablesExist()`.
 
 > The migrations use microsecond-precision timestamps (`timestamp(6)`) so the
 > clear/visibility boundary stays correct when events share a wall-clock second.
@@ -145,6 +158,9 @@ $newer  = Messenger::messages($conversation, $alice, ['after_id' => $latest->las
 
 // ⚠ Always pass `limit`. Omitting it loads the **entire** visible history into memory.
 // That is intentional for scripts, but almost never right for HTTP or Livewire endpoints.
+// For production, set `messenger.messages.max_read_limit` to a hard page-size ceiling:
+// it caps any provided `limit` AND bounds an omitted one, so a forgotten `limit`
+// can never hydrate a whole conversation.
 
 // Unread totals (denormalized — no message scanning; archived excluded by default)
 $alice->unreadMessagesCount();               // total unread messages
@@ -312,7 +328,7 @@ class ProfanityFilter implements SendPipe
 }
 ```
 
-> The default pipes provide the package's core guarantees (valid participants, mutual block/spam, non-empty messages, attachment limits, valid replies). The pipeline is yours to customise, but **removing a default pipe removes the guarantee it provides** — e.g. dropping `EnsureMessageHasContent` lets empty messages persist. Add pipes freely; only remove a default one when you intend to drop its check. Note that `EnsureAttachmentsAreValid` validates client-reported type/size/count metadata only — add your own pipe for deep content inspection or virus scanning of untrusted uploads. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#design-constraints--trade-offs-v1).
+> The default pipes provide the package's core guarantees (valid participants, mutual block/spam, non-empty messages, attachment limits, valid replies). The pipeline is yours to customise, but **removing a default pipe removes the guarantee it provides** — e.g. dropping `EnsureMessageHasContent` lets empty messages persist. Add pipes freely; only remove a default one when you intend to drop its check. Note that `EnsureAttachmentsAreValid` validates client-reported type/size/count metadata by default. Set `messenger.attachments.verify_real_mime` to `true` to additionally check the **server-detected** (content-sniffed) MIME against the allow-list, catching a payload renamed to a permitted extension. For deeper guarantees (virus scanning, archive-bomb checks), add your own pipe. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#design-constraints--trade-offs-v1).
 
 ## Authorization
 
@@ -320,18 +336,18 @@ The package is **not** responsible for business authorization (no policies, role
 
 **Reads require participation.** Conversation-scoped operations enforce membership: `Messenger::messages($conversation, $viewer)` (and the participant-state actions `archive`, `clear`, `block`, `markAsRead`, …) throw `InvalidParticipantException` when the viewer is not a participant — they do **not** return an empty result. Catch it and map to 403/404. Note that `Messenger::between()` resolves the conversation for any caller who knows the participant pair; only the membership-scoped operations enforce the check.
 
-Consistent with this, **message reporting is unrestricted by default**: `Messenger::report()` accepts a report from any identity against any message and does not require the reporter to be a participant. Set `messenger.reports.participants_only` to `true` to require the reporter to belong to the message's conversation, or gate it in your application.
+Consistent with this, **message reporting is participant-only by default**: `Messenger::report()` rejects a report from an identity that is not a member of the message's conversation (`InvalidReportException`). Set `messenger.reports.participants_only` to `false` to restore the unrestricted headless contract and authorise reporting in your application instead.
 
-Two further opt-in guards are available (both **off by default** to preserve the headless contract):
+Two security guards ship **on by default** (set either to `false` to opt out):
 
-- `messenger.validation.verify_participants_exist` — when `true`, the send pipeline rejects a sender/recipient that does not exist in the database (preventing "ghost" participants).
+- `messenger.validation.verify_participants_exist` — the send pipeline rejects a sender/recipient that does not exist in the database (preventing "ghost" participants). Costs two indexed existence checks on first send.
 - `messenger.reports.participants_only` — participant-only reporting, as above.
 
 ## Security notes
 
 Because the package is headless and host-owned, a few responsibilities sit with your application:
 
-- **Attachment access.** `$attachment->url` returns `Storage::disk($disk)->url($path)` with no signing or authorization. If you store attachments on a **public** disk, those URLs are world-readable. Use a private disk and serve files through an authorized controller (or `temporaryUrl()` on a disk that supports it). The package never gates file access for you.
+- **Attachment access.** `$attachment->url` returns `Storage::disk($disk)->url($path)` with no signing or authorization. If you store attachments on a **public** disk, those URLs are world-readable. Use a private disk and either serve files through an authorized controller, or hand out a short-lived signed link with the bundled helper `$attachment->temporaryUrl($minutes)` (on a driver that supports temporary URLs, e.g. S3). The package never gates file access for you.
 - **Mass assignment.** Package models use `$guarded = []` and are intended to be written **only** through the package's actions (`Messenger::send()`, `report()`, etc.), never filled directly from request input. Do not do `Message::create($request->all())` or `$participant->update($request->all())` — that would let callers tamper with fields like `unread_count`, `blocked_at` or `sender_id`. Treat the models as internal domain objects.
 - **Blocked / spam conversations stay in the inbox.** Blocking or marking spam prevents *sending* (mutually) but, per the v1 spec, keeps history visible and stored — so these conversations still appear in `Messenger::inbox()`. Each returned `Conversation` exposes the participant's `blocked_at` / `spammed_at` state for your UI to badge, or pass `['exclude_blocked' => true, 'exclude_spam' => true]` to drop them from the result entirely.
 - **Deleting participants is host-owned.** The morphable design precludes database foreign keys, so deleting a host participant model does not cascade: their `messenger_participants`, messages, attachments and reports remain, and `morphTo` accessors like `$message->sender` then resolve to `null`. Treat those relations as nullable in your UI. When you delete an account, also remove its messenger rows.

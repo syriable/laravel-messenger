@@ -75,9 +75,9 @@ The package enforces only internal messaging constraints — blocked/spammed con
 
 These behaviours are deliberate for v1. They keep the package lightweight, headless and host-controlled. Each can be tightened in the host application, and some may become opt-in features later.
 
-### Message reporting is intentionally unrestricted
+### Message reporting is participant-only by default
 
-`Messenger::report()` records a report from any identity against any message; it does **not** require the reporter to be a participant in that message's conversation. Reporting is treated as a host-application concern (moderation queues, abuse handling), so authorization — including "may this identity report this message?" — belongs to the host. The package only guarantees that a given reporter reports a given message at most once. If you need participant-only reporting, gate the call in your application or add a custom check before invoking `report()`.
+`Messenger::report()` requires the reporter to be a member of the message's conversation by default (`messenger.reports.participants_only = true`). This is a safe baseline against abuse: an identity outside the conversation cannot report its messages. The package also guarantees that a given reporter reports a given message at most once. To restore the fully headless contract — where reporting authorization is entirely a host concern (moderation queues, abuse handling) — set `participants_only` to `false` and gate the call in your application.
 
 ### The send pipeline is fully configurable — and that includes the safety pipes
 
@@ -93,13 +93,17 @@ The default `messenger.pipeline` provides the package's core guarantees:
 
 The pipeline is config-driven so hosts can insert their own moderation/filtering pipes. The trade-off: **removing a default pipe removes the guarantee it provides.** If you customise `messenger.pipeline`, keep the pipes whose guarantees you still want — e.g. dropping `EnsureMessageHasContent` will allow empty messages to persist. Add to the list; only remove a default pipe when you deliberately want to drop its check.
 
+### Messages are immutable: no edit, delete or unsend (v1)
+
+There is intentionally no edit/delete/unsend API in v1. Messages are an append-only, immutable log; "clear" is a per-participant visibility reset, not a delete, and block/spam preserve history. A host that needs soft-delete or "delete for me" semantics can model it on top of the package (e.g. a host-side `hidden_message_ids` set per participant, or a follow-up migration adding a `deleted_at` column plus a custom read scope) without the package making that decision for every consumer. Attachment files left behind by host-driven deletion are reclaimed with `messenger:prune`.
+
 ### No database-level foreign keys
 
 Migrations link conversations, messages, participants and attachments through **indexed columns without foreign-key constraints**. This is deliberate: participants/senders are morphable (so a single FK can't express them), the schema stays portable across database engines, and the domain never performs true deletes (clearing is a visibility reset). Referential integrity is maintained by the package's actions, which always write related rows inside a single transaction. Applications that want database-enforced cascades can add their own follow-up migration with `foreign()` constraints suited to their stack.
 
 ### Realtime broadcasts are lightweight notifications
 
-`MessageSentBroadcast` carries core scalar fields (`id`, `conversation_id`, `sender_type`, `sender_id`, `body`, `reply_to_id`, `created_at`) but **not** attachment metadata. The broadcast is a "a message arrived" signal; clients render attachment-only or mixed messages by loading the message (e.g. via `Messenger::messages()`), keeping the realtime payload small and the database authoritative. If you need attachments inline, broadcast a custom event (or override `broadcastWith()`) that includes them.
+`MessageSentBroadcast` carries core scalar fields (`id`, `conversation_id`, `sender_type`, `sender_id`, `body`, `reply_to_id`, `created_at`) plus a **metadata-only attachment summary** — `has_attachments` and an `attachments` array of `{ id, name, mime_type, size }` (#81). It intentionally does **not** include file contents, paths or URLs (those are disk/authorization concerns), so clients can render attachment-only or mixed messages from the broadcast without leaking storage details. If you need signed URLs or more, load the message (e.g. via `Messenger::messages()`) or override `broadcastWith()`.
 
 ### Attachment validation is metadata-based
 
